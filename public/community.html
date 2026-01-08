@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html class="dark" lang="es">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Comunidad FinTrack</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com" rel="preconnect" />
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;display=swap"
+        rel="stylesheet" />
+    <!-- Material Symbols -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <!-- Socket.io -->
+    <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+    <!-- Tailwind CSS with Config -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#137fec",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101922",
+                        "surface-dark": "#161e27",
+                        "border-dark": "#283039",
+                        "bull": "#00C076",
+                        "bear": "#FF5555"
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    animation: {
+                        "fade-in": "fadeIn 0.3s ease-out"
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            "0%": { opacity: "0", transform: "translateY(10px)" },
+                            "100%": { opacity: "1", transform: "translateY(0)" }
+                        }
+                    }
+                },
+            },
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #101922;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #283039;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #3b4754;
+        }
+
+        .icon-filled {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+
+<body class="bg-background-light dark:bg-background-dark font-display text-white overflow-hidden">
+    <div class="flex h-screen w-full">
+        <!-- Sidebar Navigation -->
+        <aside class="w-64 flex-shrink-0 flex flex-col border-r border-border-dark bg-[#111418] hidden md:flex">
+            <div class="h-16 flex items-center px-6 border-b border-border-dark">
+                <div class="flex items-center gap-2 text-primary" onclick="window.location.href='/'"
+                    style="cursor: pointer;">
+                    <span class="material-symbols-outlined text-3xl">query_stats</span>
+                    <span class="text-xl font-bold tracking-tight text-white">FinTrack</span>
+                </div>
+            </div>
+            <div class="flex-1 overflow-y-auto py-6 px-3 flex flex-col gap-1">
+                <a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[#9dabb9] hover:bg-[#283039] hover:text-white transition-colors"
+                    href="dashboard.html">
+                    <span class="material-symbols-outlined">dashboard</span>
+                    <span class="text-sm font-medium">Dashboard</span>
+                </a>
+                <a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[#9dabb9] hover:bg-[#283039] hover:text-white transition-colors"
+                    href="settings.html">
+                    <span class="material-symbols-outlined">person</span>
+                    <span class="text-sm font-medium">Perfil</span>
+                </a>
+                <a class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-primary/10 text-primary group" href="#">
+                    <span class="material-symbols-outlined">groups</span>
+                    <span class="text-sm font-medium">Comunidad</span>
+                </a>
+            </div>
+            <div class="p-4 border-t border-border-dark">
+                <button onclick="logout()"
+                    class="flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg h-10 px-4 bg-[#283039] hover:bg-[#323c47] text-white text-sm font-bold transition-colors">
+                    <span class="material-symbols-outlined text-lg">logout</span>
+                    <span>Cerrar Sesión</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content (Feed) -->
+        <main class="flex-1 flex flex-col h-full overflow-hidden relative border-r border-border-dark">
+            <!-- Header Tabs -->
+            <div
+                class="h-14 border-b border-border-dark flex items-center bg-[#101922]/80 backdrop-blur-md sticky top-0 z-20 px-4 justify-between">
+                <div class="flex gap-4">
+                    <div id="tab-all" class="relative h-14 flex items-center px-2 cursor-pointer text-white font-bold"
+                        onclick="switchFilter('ALL')">
+                        <span>Para ti</span>
+                        <div id="indicator-all" class="absolute bottom-0 left-0 w-full h-1 bg-primary rounded-t-full">
+                        </div>
+                    </div>
+                    <div id="tab-following"
+                        class="relative h-14 flex items-center px-2 cursor-pointer text-[#9dabb9] font-medium hover:bg-[#1c2127]"
+                        onclick="switchFilter('FOLLOWING')">
+                        <span>Siguiendo</span>
+                        <div id="indicator-following"
+                            class="absolute bottom-0 left-0 w-full h-1 bg-primary rounded-t-full hidden"></div>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <select id="sort-selector" onchange="changeSort(this.value)"
+                        class="bg-[#1c2127] border border-[#283039] text-white text-xs rounded-lg px-2 py-1 focus:ring-primary focus:border-primary">
+                        <option value="LATEST">Recientes</option>
+                        <option value="POPULAR">Destacados</option>
+                    </select>
+                    <button onclick="reloadFeed()" class="p-2 rounded-full hover:bg-[#283039] text-primary transition"
+                        title="Recargar">
+                        <span class="material-symbols-outlined text-xl">refresh</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Scrollable Area -->
+            <div class="flex-1 overflow-y-auto p-4 md:p-6" id="main-scroll">
+
+                <!-- Composer (Card Style) -->
+                <div class="bg-[#1c2127] border border-border-dark rounded-xl p-4 mb-6 shadow-sm">
+                    <div id="quote-preview-container"
+                        class="hidden mb-3 p-3 bg-[#111418] rounded-lg border border-[#3b4754] relative">
+                        <button onclick="cancelQuote()"
+                            class="absolute top-1 right-1 text-gray-500 hover:text-white"><span
+                                class="material-symbols-outlined text-sm">close</span></button>
+                        <p class="text-xs text-primary mb-1">Citar a <span id="quote-author-preview"
+                                class="font-bold"></span>:</p>
+                        <p id="quote-content-preview" class="text-xs text-gray-400 line-clamp-2 italic"></p>
+                    </div>
+
+                    <div class="flex gap-3">
+                        <div class="h-10 w-10 rounded-full bg-[#283039] flex-shrink-0" id="composer-avatar"
+                            style="background-size:cover; background-position:center;"></div>
+                        <div class="flex-1">
+                            <input id="post-title"
+                                class="w-full bg-transparent text-white font-bold placeholder-[#5b6a78] focus:outline-none mb-2"
+                                placeholder="Título (opcional)" />
+                            <textarea id="post-content"
+                                class="w-full bg-transparent text-white placeholder-[#5b6a78] resize-none focus:outline-none min-h-[60px]"
+                                placeholder="¿Qué está pasando en el mercado?"></textarea>
+
+                            <!-- Media Preview -->
+                            <div id="media-preview"
+                                class="hidden relative mt-2 rounded-xl overflow-hidden max-h-60 border border-border-dark">
+                                <button onclick="removeMedia()"
+                                    class="absolute top-2 right-2 bg-black/50 text-white rounded-full p-1 hover:bg-black/70"><span
+                                        class="material-symbols-outlined">close</span></button>
+                                <img id="preview-img" class="w-full h-full object-cover" />
+                                <video id="preview-video" class="w-full h-full object-cover hidden" controls></video>
+                            </div>
+
+                            <div class="flex justify-between items-center mt-3 pt-3 border-t border-[#283039]">
+                                <div class="flex gap-2">
+                                    <button class="text-primary hover:bg-primary/10 p-2 rounded-full transition"
+                                        onclick="document.getElementById('media-upload').click()">
+                                        <span class="material-symbols-outlined">image</span>
+                                    </button>
+                                    <input type="file" id="media-upload" class="hidden" accept="image/*,video/*"
+                                        onchange="handleMedia(this)">
+                                </div>
+                                <button onclick="publishPost()"
+                                    class="bg-primary hover:bg-blue-600 text-white font-bold px-4 py-1.5 rounded-full text-sm transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                    id="publish-btn">
+                                    Publicar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Feed Container -->
+                <div id="feed-container" class="flex flex-col gap-4 pb-20">
+                    <!-- Posts go here -->
+                </div>
+
+                <!-- Loading Sentinel -->
+                <div id="sentinel" class="h-20 flex justify-center items-center">
+                    <span
+                        class="loading-spinner h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin hidden"></span>
+                </div>
+            </div>
+        </main>
+
+        <!-- Right Widgets -->
+        <aside class="w-80 border-l border-border-dark bg-[#111418] hidden lg:flex flex-col p-4 gap-6">
+            <!-- Search -->
+            <div class="relative">
+                <span
+                    class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-[#5b6a78]">search</span>
+                <input
+                    class="w-full bg-[#1c2127] border-none rounded-full py-2.5 pl-10 pr-4 text-sm text-white focus:ring-1 focus:ring-primary placeholder-[#5b6a78]"
+                    placeholder="Buscar en FinTrack" />
+            </div>
+
+            <!-- Market Pulse Widget -->
+            <div class="bg-[#161e27] rounded-xl border border-border-dark overflow-hidden">
+                <div class="p-4 border-b border-border-dark bg-[#1c2127]">
+                    <h3 class="font-black text-lg text-white">Market Pulse</h3>
+                </div>
+                <div id="market-pulse-list" class="flex flex-col divide-y divide-border-dark">
+                    <div class="p-4 text-xs text-[#9dabb9]">Connecting...</div>
+                </div>
+            </div>
+
+            <!-- Who to follow -->
+            <div class="bg-[#161e27] rounded-xl border border-border-dark p-4">
+                <h3 class="font-black text-lg text-white mb-4">A quién seguir</h3>
+                <div id="suggestions-list" class="flex flex-col gap-4">
+                    <div class="text-center text-[#9dabb9] text-xs">Cargando sugerencias...</div>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed top-20 right-5 z-[60] flex flex-col gap-3 pointer-events-none"></div>
+
+    <!-- Reply Modal  -->
+    <div id="reply-modal"
+        class="fixed inset-0 z-50 hidden bg-black/80 flex items-center justify-center backdrop-blur-sm">
+        <div class="bg-surface-dark border border-border-dark rounded-xl w-full max-w-lg p-4 shadow-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-white font-bold">Responder</h3>
+                <button onclick="closeReplyModal()" class="text-text-secondary hover:text-white"><span
+                        class="material-symbols-outlined">close</span></button>
+            </div>
+            <div id="reply-post-summary"
+                class="mb-4 p-3 bg-[#111418] rounded-lg border border-[#283039] text-xs text-text-secondary italic">
+            </div>
+            <textarea id="reply-input"
+                class="w-full bg-[#0b0e11] text-white rounded-lg p-3 border border-border-dark focus:border-primary focus:outline-none resize-none"
+                rows="3" placeholder="Postea tu respuesta"></textarea>
+            <div class="flex justify-end mt-3">
+                <button onclick="submitReply()"
+                    class="bg-primary hover:bg-blue-600 text-white font-bold px-4 py-1.5 rounded-full text-sm">Responder</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Post Details Modal (NEW) -->
+    <div id="post-details-modal"
+        class="fixed inset-0 z-50 hidden bg-black/90 flex flex-col items-center overflow-hidden backdrop-blur-sm">
+        <div
+            class="w-full max-w-2xl flex-1 flex flex-col bg-[#111418] border-x border-[#283039] overflow-hidden relative">
+
+            <!-- Sticky Header -->
+            <div class="flex items-center gap-4 px-4 h-14 border-b border-[#283039] bg-[#111418] flex-shrink-0">
+                <button onclick="closePostDetails()"
+                    class="p-2 -ml-2 rounded-full hover:bg-[#283039] transition text-white">
+                    <span class="material-symbols-outlined">arrow_back</span>
+                </button>
+                <h3 class="text-lg font-bold text-white">Post</h3>
+            </div>
+
+            <!-- Scrollable Content -->
+            <div class="flex-1 overflow-y-auto p-4" id="post-details-scroll">
+                <div id="post-details-content" class="mb-4">
+                    <!-- Main Post Content -->
+                </div>
+
+                <h4 class="text-sm font-bold text-[#9dabb9] mb-4 uppercase tracking-wider">Comentarios</h4>
+
+                <div id="post-details-comments" class="flex flex-col gap-3 pb-20">
+                    <!-- Comments List -->
+                </div>
+            </div>
+
+            <!-- Fixed Comment Input -->
+            <div class="p-3 border-t border-[#283039] bg-[#111418]">
+                <div class="flex gap-2">
+                    <input id="detail-comment-input"
+                        class="flex-1 bg-[#1c2127] border border-[#283039] rounded-full px-4 text-sm text-white focus:border-primary focus:ring-1 focus:ring-primary"
+                        placeholder="Escribe tu respuesta..." />
+                    <button onclick="submitDetailComment()"
+                        class="bg-primary text-white rounded-full p-2.5 hover:bg-blue-600 transition">
+                        <span class="material-symbols-outlined text-[20px]">send</span>
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:3000';
+        const token = localStorage.getItem('access_token');
+        let socket;
+        let userData = {};
+
+        // Feed State
+        let currentFilter = 'ALL';
+        let currentSort = 'LATEST';
+        let cursor = null;
+        let isLoading = false;
+        let infiniteScrollObserver = null;
+        let postsMap = new Map(); // Store posts to access them for modal
+
+        let replyingToPostId = null;
+        let quotingPostId = null;
+        let mediaFile = null;
+        let currentDetailPostId = null; // ID of post currently open in modal
+
+        if (!token) window.location.href = 'login.html';
+
+        // Init
+        (async () => {
+            await loadUserData();
+            initSocket();
+            setupInfiniteScroll();
+            loadFeed(false);
+            loadSuggestions();
+        })();
+
+        async function loadUserData() {
+            try {
+                const res = await fetch(`${API_URL}/auth/profile`, { headers: { 'Authorization': `Bearer ${token}` } });
+                userData = await res.json();
+                const avatarEl = document.getElementById('composer-avatar');
+                if (userData.avatarUrl) avatarEl.style.backgroundImage = `url('${API_URL}${userData.avatarUrl}')`;
+                else avatarEl.style.backgroundImage = `linear-gradient(to top right, #137fec, #93c5fd)`;
+            } catch (e) { console.error("Auth error", e); }
+        }
+
+        // --- FEED LOGIC ---
+        function switchFilter(type) {
+            if (currentFilter === type) return;
+            currentFilter = type;
+
+            // UI Update
+            const allTab = document.getElementById('tab-all');
+            const followingTab = document.getElementById('tab-following');
+            const allInd = document.getElementById('indicator-all');
+            const followingInd = document.getElementById('indicator-following');
+
+            if (type === 'ALL') {
+                allTab.className = "relative h-14 flex items-center px-2 cursor-pointer text-white font-bold";
+                followingTab.className = "relative h-14 flex items-center px-2 cursor-pointer text-[#9dabb9] font-medium hover:bg-[#1c2127]";
+                allInd.classList.remove('hidden');
+                followingInd.classList.add('hidden');
+            } else {
+                followingTab.className = "relative h-14 flex items-center px-2 cursor-pointer text-white font-bold";
+                allTab.className = "relative h-14 flex items-center px-2 cursor-pointer text-[#9dabb9] font-medium hover:bg-[#1c2127]";
+                followingInd.classList.remove('hidden');
+                allInd.classList.add('hidden');
+            }
+
+            reloadFeed();
+        }
+
+        function changeSort(sort) {
+            if (currentSort === sort) return;
+            currentSort = sort;
+            reloadFeed();
+        }
+
+        function reloadFeed() {
+            cursor = null;
+            postsMap.clear();
+            document.getElementById('feed-container').innerHTML = '';
+            loadFeed(false);
+        }
+
+        async function loadFeed(append = true) {
+            if (isLoading) return;
+            isLoading = true;
+            document.querySelector('.loading-spinner').classList.remove('hidden');
+
+            try {
+                let url = `${API_URL}/community/posts?type=${currentFilter}&sortBy=${currentSort}&limit=10`;
+                if (cursor) url += `&cursor=${cursor}`;
+
+                const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+                const posts = await res.json();
+
+                if (posts && posts.length > 0) {
+                    cursor = posts[posts.length - 1].id;
+                    posts.forEach(p => postsMap.set(p.id, p));
+                    renderFeed(posts, append);
+                } else if (!append) {
+                    document.getElementById('feed-container').innerHTML = '<div class="text-center p-10 text-[#9dabb9]">No hay posts para mostrar.</div>';
+                }
+            } catch (e) {
+                console.error(e);
+            } finally {
+                isLoading = false;
+                document.querySelector('.loading-spinner').classList.add('hidden');
+            }
+        }
+
+        function renderFeed(posts, append) {
+            const container = document.getElementById('feed-container');
+            if (!append) container.innerHTML = '';
+
+            const html = posts.map(post => createPostHTML(post)).join('');
+            container.insertAdjacentHTML('beforeend', html);
+        }
+
+        function createPostHTML(post, isDetail = false) {
+            const authorName = post.author?.name || post.author?.email.split('@')[0] || 'Unknown';
+            const avatarStyle = post.author?.avatarUrl
+                ? `background-image: url('${API_URL}${post.author.avatarUrl}'); background-size: cover; background-position: center;`
+                : `background: linear-gradient(to top right, #137fec, #93c5fd);`;
+
+            const date = new Date(post.createdAt).toLocaleDateString() + ' ' + new Date(post.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const myVote = (post.votes || []).find(v => v.userId === userData.id);
+
+            const isLiked = myVote && myVote.value === 1;
+            const likedClass = isLiked ? 'text-red-500' : 'text-[#9dabb9] hover:text-red-500';
+            const likeIconClass = isLiked ? 'icon-filled' : '';
+            const likesCount = post.score || 0;
+            const viewsCount = post.views || 0;
+
+            // Media
+            let mediaHtml = '';
+            if (post.mediaUrl) {
+                const fullUrl = `${API_URL}${post.mediaUrl}`;
+                if (post.mediaType === 'VIDEO') mediaHtml = `<video controls class="w-full rounded-lg mt-3 bg-black max-h-[500px]" src="${fullUrl}"></video>`;
+                else mediaHtml = `<img class="w-full rounded-lg mt-3 border border-[#283039] max-h-[500px] object-cover" src="${fullUrl}" loading="lazy" />`;
+            }
+
+            // Quote
+            let quoteHtml = '';
+            if (post.quotedPost) {
+                const qAuthor = post.quotedPost.author?.name || post.quotedPost.author?.email.split('@')[0] || 'Unknown';
+                quoteHtml = `
+                        <div class="mt-3 border border-[#3b4754] rounded-lg p-3 bg-[#0b0e11] cursor-pointer hover:bg-[#151a21]" onclick="event.stopPropagation(); window.location.href='#post-${post.quotedPost.id}'">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-white font-bold text-xs">${qAuthor}</span>
+                                <span class="text-[#9dabb9] text-xs">Original Post</span>
+                            </div>
+                            <p class="text-[#9dabb9] text-sm line-clamp-2">${post.quotedPost.content}</p>
+                        </div>
+                    `;
+            }
+
+            const commentsCount = (post.comments || []).length;
+
+            // If detail view, we don't need onclick
+            const containerClass = isDetail
+                ? "bg-[#1c2127] border border-border-dark rounded-xl p-5 mb-2"
+                : "bg-[#1c2127] border border-border-dark rounded-xl p-5 hover:border-[#3b4754] transition duration-200 animate-fade-in cursor-pointer mb-2";
+
+            const onClickAttr = isDetail ? '' : `onclick="openPostDetails('${post.id}')"`;
+
+            return `
+                    <div id="post-${post.id}" class="${containerClass}" ${onClickAttr}>
+                       <div class="flex items-start justify-between mb-3">
+                           <div class="flex items-center gap-3">
+                               <div class="h-10 w-10 rounded-full bg-[#1c2127] border border-[#283039]" style="${avatarStyle}"></div>
+                               <div>
+                                   <p class="text-white text-sm font-bold capitalize cursor-pointer hover:underline">${authorName}</p>
+                                   <p class="text-[#9dabb9] text-xs">${date}</p>
+                               </div>
+                           </div>
+                       </div>
+                       
+                       <h3 class="text-white text-lg font-bold mb-1">${post.title || ""}</h3>
+                       <div class="text-[#9dabb9] text-sm leading-relaxed whitespace-pre-wrap">${post.content}</div>
+                       ${mediaHtml}
+                       ${quoteHtml}
+                       
+                       <!-- NO COMMENTS PREVIEW HERE -->
+
+                       <div class="flex items-center justify-between pt-3 mt-3 border-t border-[#283039]/50">
+                           <div class="flex gap-6">
+                               <!-- Reply -->
+                               <button onclick="event.stopPropagation(); openReplyModal('${post.id}', '${post.content.substring(0, 50).replace(/'/g, "") + "..."}')" class="flex items-center gap-1.5 text-[#9dabb9] hover:text-primary transition group">
+                                   <span class="material-symbols-outlined text-[20px] group-hover:bg-primary/10 rounded-full p-1 -m-1 transition">chat_bubble</span>
+                                   <span class="text-xs font-bold">${commentsCount}</span>
+                               </button>
+                               <!-- Like -->
+                               <button onclick="event.stopPropagation(); toggleLike(event, '${post.id}')" class="flex items-center gap-1.5 ${likedClass} transition group">
+                                   <span class="material-symbols-outlined text-[20px] ${likeIconClass} group-hover:bg-red-500/10 rounded-full p-1 -m-1 transition">favorite</span>
+                                   <span class="text-xs font-bold">${likesCount}</span>
+                               </button>
+                               <!-- Quote -->
+                               <button onclick="event.stopPropagation(); quotePost('${post.id}', '${authorName}', '${post.content.substring(0, 60).replace(/\n/g, ' ').replace(/'/g, "")}')" class="flex items-center gap-1.5 text-[#9dabb9] hover:text-blue-400 transition group" title="Citar Tweet">
+                                    <span class="material-symbols-outlined text-[20px] group-hover:bg-blue-400/10 rounded-full p-1 -m-1 transition">format_quote</span>
+                               </button>
+                               <!-- Views -->
+                               <button class="flex items-center gap-1.5 text-[#9dabb9] hover:text-emerald-500 transition group cursor-default">
+                                    <span class="material-symbols-outlined text-[20px] group-hover:bg-emerald-500/10 rounded-full p-1 -m-1 transition">bar_chart</span>
+                                    <span class="text-xs font-bold">${viewsCount}</span>
+                               </button>
+                           </div>
+                       </div>
+                    </div>
+                `;
+        }
+
+        // --- POST DETAILS MODAL ---
+        async function openPostDetails(postId) {
+            const post = postsMap.get(postId);
+            if (!post) return;
+
+            // Increment View
+            fetch(`${API_URL}/community/posts/${postId}/view`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            }).then(res => {
+                if (!res.ok) {
+                    console.error('View increment failed:', res.status);
+                    // showToast(`Error counting view: ${res.status}`, 'error'); // Optional: show toast
+                }
+            }).catch(e => console.error('View network error:', e));
+
+            // Optimistic update
+            post.views = (post.views || 0) + 1;
+
+            currentDetailPostId = postId;
+            const modal = document.getElementById('post-details-modal');
+            const contentContainer = document.getElementById('post-details-content');
+            const commentsContainer = document.getElementById('post-details-comments');
+
+            // Render main post large
+            contentContainer.innerHTML = createPostHTML(post, true);
+
+            // Render comments
+            commentsContainer.innerHTML = '';
+            if (post.comments && post.comments.length > 0) {
+                commentsContainer.innerHTML = post.comments.map(c => createCommentHTML(c)).join('');
+            } else {
+                commentsContainer.innerHTML = '<div class="text-[#5b6a78] text-center text-sm py-4">Sé el primero en comentar.</div>';
+            }
+
+            modal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden'; // Prevent body scroll
+
+            // Also update the feed item view count if visible
+            const feedItem = document.getElementById(`post-${postId}`);
+            if (feedItem) {
+                // The view count is the last .text-xs.font-bold span in the post footer
+                const viewCounts = feedItem.querySelectorAll('.text-xs.font-bold');
+                if (viewCounts.length > 0) {
+                    viewCounts[viewCounts.length - 1].innerText = post.views;
+                }
+            }
+        }
+
+        function closePostDetails() {
+            document.getElementById('post-details-modal').classList.add('hidden');
+            document.body.style.overflow = 'auto'; // Restore scroll
+            currentDetailPostId = null;
+        }
+
+        function createCommentHTML(c) {
+            const authorName = c.author?.name || c.author?.email.split('@')[0] || 'Unknown';
+            const avatarStyle = c.author?.avatarUrl
+                ? `background-image: url('${API_URL}${c.author.avatarUrl}');`
+                : `background: linear-gradient(to top right, #137fec, #93c5fd);`;
+
+            return `
+                <div class="flex gap-3 p-4 bg-[#1c2127]/50 rounded-lg border border-[#283039]">
+                    <div class="h-8 w-8 rounded-full bg-[#1c2127] border border-[#283039] flex-shrink-0" style="${avatarStyle} background-size: cover; background-position: center;"></div>
+                    <div class="flex-1">
+                        <div class="flex items-center gap-2 mb-1">
+                             <span class="text-white font-bold text-sm">${authorName}</span>
+                             <span class="text-[#5b6a78] text-xs">${new Date(c.createdAt).toLocaleDateString()}</span>
+                        </div>
+                        <p class="text-[#d1d5db] text-sm">${c.content}</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function submitDetailComment() {
+            const input = document.getElementById('detail-comment-input');
+            const content = input.value;
+            if (!content.trim() || !currentDetailPostId) return;
+
+            try {
+                const res = await fetch(`${API_URL}/community/posts/${currentDetailPostId}/comments`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ content })
+                });
+                if (res.ok) {
+                    showToast('Comentario enviado', 'success');
+                    input.value = '';
+                    // Reload post data to show new comment?
+                    // Fetch single post not avail, reuse reloadFeed trigger?
+                    // Ideally we append locally.
+                    const newComment = {
+                        content,
+                        createdAt: new Date().toISOString(),
+                        author: { name: userData.name || userData.email.split('@')[0], avatarUrl: userData.avatarUrl, email: userData.email }
+                    };
+
+                    // Update Map
+                    const post = postsMap.get(currentDetailPostId);
+                    if (post) {
+                        if (!post.comments) post.comments = [];
+                        post.comments.push(newComment);
+
+                        // Re-render
+                        const commentsContainer = document.getElementById('post-details-comments');
+                        // Remove "empty" msg if exists
+                        if (commentsContainer.innerHTML.includes('Sé el primero')) commentsContainer.innerHTML = '';
+                        commentsContainer.insertAdjacentHTML('beforeend', createCommentHTML(newComment));
+
+                        // Also update feed comment count if visible behind modal?
+                        // Too complex, reloadFeed is safer for sync
+                        reloadFeed(); // This clears map... wait.
+                        // If I reload feed, I should ideally update the map but NOT clear current modal.
+                        // Compromise: Add to UI locally (DONE above), and reload map in background?
+                        // Let's just update local UI and leave it.
+                    }
+                } else {
+                    showToast('Error al comentar', 'error');
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        function setupInfiniteScroll() {
+            const sentinel = document.getElementById('sentinel');
+            infiniteScrollObserver = new IntersectionObserver((entries) => {
+                if (entries[0].isIntersecting && !isLoading) {
+                    loadFeed(true);
+                }
+            }, { rootMargin: '200px' });
+            infiniteScrollObserver.observe(sentinel);
+        }
+
+        // --- TOASTS ---
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+
+            // Styles
+            const styles = {
+                success: 'border-l-4 border-green-500 bg-[#1c2127]',
+                error: 'border-l-4 border-red-500 bg-[#1c2127]',
+                info: 'border-l-4 border-primary bg-[#1c2127]'
+            };
+            const icons = {
+                success: 'check_circle',
+                error: 'error',
+                info: 'info'
+            };
+
+            toast.className = `pointer-events-auto flex items-center gap-3 p-4 rounded-r-lg shadow-2xl border-y border-r border-[#283039] text-white min-w-[300px] animate-fade-in transform transition-all duration-300 ${styles[type]}`;
+            toast.innerHTML = `
+                <span class="material-symbols-outlined ${type === 'error' ? 'text-red-500' : type === 'success' ? 'text-green-500' : 'text-primary'}">${icons[type]}</span>
+                <span class="text-sm font-medium">${message}</span>
+            `;
+
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-x-full');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        async function publishPost() {
+            const title = document.getElementById('post-title').value;
+            const content = document.getElementById('post-content').value;
+            if (!content.trim() && !mediaFile) return;
+
+            document.getElementById('publish-btn').disabled = true;
+            document.getElementById('publish-btn').innerText = 'Publicando...';
+
+            let mediaUrl = null;
+            let mediaType = null;
+
+            try {
+                if (mediaFile) {
+                    const formData = new FormData();
+                    formData.append('file', mediaFile);
+                    const uploadRes = await fetch(`${API_URL}/community/upload`, {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${token}` },
+                        body: formData
+                    });
+                    if (uploadRes.ok) {
+                        const data = await uploadRes.json();
+                        mediaUrl = data.url;
+                        mediaType = data.type;
+                    }
+                }
+
+                const body = { title, content, mediaUrl, mediaType };
+                if (quotingPostId) body.quotedPostId = quotingPostId;
+
+                const res = await fetch(`${API_URL}/community/posts`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+
+                if (res.ok) {
+                    document.getElementById('post-title').value = '';
+                    document.getElementById('post-content').value = '';
+                    removeMedia();
+                    cancelQuote();
+                    reloadFeed();
+                    showToast('Post publicado correctamente', 'success');
+                } else showToast('Error al publicar', 'error');
+
+            } catch (e) { console.error(e); showToast('Error de conexión', 'error'); }
+            finally {
+                document.getElementById('publish-btn').disabled = false;
+                document.getElementById('publish-btn').innerText = 'Publicar';
+            }
+        }
+
+        // --- INTERACTIONS ---
+        async function toggleLike(event, postId) {
+            const btn = event.currentTarget;
+            const textEl = btn.querySelector('span.font-bold');
+            const icon = btn.querySelector('.material-symbols-outlined');
+            let currentCount = parseInt(textEl.innerText) || 0;
+
+            const isLiked = btn.classList.contains('text-red-500');
+            const newValue = isLiked ? 0 : 1;
+
+            try {
+                const res = await fetch(`${API_URL}/community/posts/${postId}/vote`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ value: newValue })
+                });
+
+                if (res.ok) {
+                    if (isLiked) {
+                        btn.classList.remove('text-red-500');
+                        icon.classList.remove('icon-filled');
+                        textEl.innerText = Math.max(0, currentCount - 1);
+                    } else {
+                        btn.classList.add('text-red-500');
+                        icon.classList.add('icon-filled');
+                        textEl.innerText = currentCount + 1;
+                    }
+                    // Update global map too for consistency if modal opened later
+                    const p = postsMap.get(postId);
+                    if (p) {
+                        // crude update
+                        if (!p.votes) p.votes = [];
+                        if (newValue === 1) p.votes.push({ userId: userData.id, value: 1 });
+                        else p.votes = p.votes.filter(v => v.userId !== userData.id);
+                        p.score = (p.score || 0) + (newValue === 1 ? 1 : -1);
+                    }
+                }
+            } catch (e) { console.error(e); showToast('Error de conexión', 'error'); }
+        }
+
+        async function submitReply() {
+            const content = document.getElementById('reply-input').value;
+            if (!content || !replyingToPostId) return;
+
+            try {
+                const res = await fetch(`${API_URL}/community/posts/${replyingToPostId}/comments`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ content })
+                });
+                if (res.ok) {
+                    closeReplyModal();
+                    document.getElementById('reply-input').value = '';
+                    showToast('Comentario enviado', 'success');
+                    reloadFeed();
+                } else {
+                    showToast('Error al enviar comentario', 'error');
+                }
+            } catch (e) { showToast('Error de conexión', 'error'); }
+        }
+
+        function openReplyModal(postId, previewText) {
+            replyingToPostId = postId;
+            document.getElementById('reply-post-summary').textContent = previewText ? `Respondiendo a: "${previewText}"` : 'Respondiendo...';
+            document.getElementById('reply-modal').classList.remove('hidden');
+        }
+        function closeReplyModal() {
+            document.getElementById('reply-modal').classList.add('hidden');
+            replyingToPostId = null;
+        }
+
+        // --- MEDIA ---
+        function handleMedia(input) {
+            const file = input.files[0];
+            if (!file) return;
+            mediaFile = file;
+
+            const previewDiv = document.getElementById('media-preview');
+            const img = document.getElementById('preview-img');
+            const video = document.getElementById('preview-video');
+
+            previewDiv.classList.remove('hidden');
+            const url = URL.createObjectURL(file);
+
+            if (file.type.startsWith('video/')) {
+                img.classList.add('hidden');
+                video.classList.remove('hidden');
+                video.src = url;
+            } else {
+                video.classList.add('hidden');
+                img.classList.remove('hidden');
+                img.src = url;
+            }
+        }
+
+        function removeMedia() {
+            mediaFile = null;
+            document.getElementById('media-upload').value = '';
+            document.getElementById('media-preview').classList.add('hidden');
+        }
+
+        function quotePost(postId, author, content) {
+            quotingPostId = postId;
+            document.getElementById('quote-preview-container').classList.remove('hidden');
+            document.getElementById('quote-author-preview').textContent = author;
+            document.getElementById('quote-content-preview').textContent = content;
+            document.getElementById('post-content').focus();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function cancelQuote() {
+            quotingPostId = null;
+            document.getElementById('quote-preview-container').classList.add('hidden');
+        }
+
+
+        // --- SOCKETS (Market Pulse) ---
+        function initSocket() {
+            socket = io(API_URL);
+            console.log("Initializing Socket...");
+
+            const watchlist = ['BTC', 'ETH', 'SOL', 'AAPL', 'TSLA'];
+            const pulseList = document.getElementById('market-pulse-list');
+
+            pulseList.innerHTML = watchlist.map(sym => `
+                <div class="flex items-center justify-between px-5 py-3 hover:bg-[#283039] transition cursor-pointer" id="pulse-${sym}">
+                    <div class="flex flex-col">
+                        <span class="text-white font-bold text-sm">$${sym}</span>
+                    </div>
+                    <div class="flex flex-col items-end">
+                        <span class="text-white font-medium text-sm pulse-price">---</span>
+                         <span class="text-[#9dabb9] text-xs font-bold pulse-change">---</span>
+                    </div>
+                </div>
+            `).join('');
+
+            socket.on('connect', () => {
+                console.log("Connected to Market Data");
+                watchlist.forEach(sym => socket.emit('subscribeToAsset', sym));
+            });
+
+            socket.on('priceUpdate', (data) => {
+                const row = document.getElementById(`pulse-${data.symbol}`);
+                if (row) {
+                    const priceEl = row.querySelector('.pulse-price');
+                    const changeEl = row.querySelector('.pulse-change');
+
+                    priceEl.innerText = parseFloat(data.price).toFixed(2);
+                    const change = parseFloat(data.change24h);
+                    changeEl.innerText = (change >= 0 ? '+' : '') + change.toFixed(2) + '%';
+                    changeEl.className = `text-xs font-bold pulse-change ${change >= 0 ? 'text-bull' : 'text-bear'}`;
+                }
+            });
+        }
+
+        function logout() { localStorage.removeItem('access_token'); window.location.href = 'login.html'; }
+
+        // Suggestions Mock
+        function loadSuggestions() {
+            document.getElementById('suggestions-list').innerHTML = `
+                <div class="flex items-center gap-3 p-2 hover:bg-[#283039] rounded-lg cursor-pointer">
+                    <div class="h-8 w-8 rounded-full bg-blue-500"></div>
+                     <div class="flex-1"><p class="text-sm font-bold text-white">Top Trader</p><p class="text-xs text-[#9dabb9]">@trader1</p></div>
+                     <button class="text-xs bg-white text-black px-3 py-1 rounded-full font-bold">Seguir</button>
+                </div>
+             `;
+        }
+    </script>
+</body>
+
+</html>

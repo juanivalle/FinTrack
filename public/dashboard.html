@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html class="dark" lang="es">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>FinTrack - Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#137fec",
+                        "background-dark": "#111418",
+                        "surface-dark": "#1c2127",
+                        "border-dark": "#283039",
+                        "bull": "#0bda5b",
+                        "bear": "#fa6238",
+                    },
+                    fontFamily: { "display": ["Inter", "sans-serif"] },
+                },
+            },
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #3b4754;
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #5a6b7c;
+        }
+
+        @keyframes marquee {
+            0% {
+                transform: translateX(0);
+            }
+
+            100% {
+                transform: translateX(-50%);
+            }
+        }
+
+        .animate-marquee {
+            animation: marquee 30s linear infinite;
+        }
+
+        .animate-marquee:hover {
+            animation-play-state: paused;
+        }
+    </style>
+</head>
+
+<body class="bg-background-dark text-white font-display overflow-hidden h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="h-16 border-b border-border-dark bg-[#111418] flex items-center justify-between px-6 shrink-0 z-20">
+        <div class="flex items-center gap-2 text-primary cursor-pointer" onclick="window.location.href='index.html'">
+            <span class="material-symbols-outlined text-3xl">query_stats</span>
+            <span class="text-xl font-bold tracking-tight text-white">FinTrack</span>
+        </div>
+
+        <div class="flex items-center gap-4">
+            <div class="hidden md:flex items-center bg-[#1c2127] rounded-lg border border-border-dark px-3 py-1.5 w-64">
+                <span class="material-symbols-outlined text-[#9dabb9] text-sm">search</span>
+                <input type="text" placeholder="Buscar activo (BTC, AAPL)..."
+                    class="bg-transparent border-none focus:ring-0 text-sm w-full text-white placeholder-[#9dabb9]">
+            </div>
+            <button onclick="logout()"
+                class="flex items-center gap-2 text-sm font-medium text-[#9dabb9] hover:text-white transition-colors">
+                <span class="material-symbols-outlined">logout</span>
+                <span class="hidden sm:inline">Salir</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Ticker -->
+    <div class="bg-[#0b0e11] border-b border-border-dark h-8 flex items-center overflow-hidden shrink-0">
+        <div class="animate-marquee whitespace-nowrap flex items-center gap-8 text-xs font-medium px-4">
+            <div class="flex gap-2 items-center"><span class="text-[#9dabb9]">BTC/USD</span> <span class="text-white"
+                    id="ticker-btc">--</span> <span class="text-bull">+2.15%</span></div>
+            <div class="flex gap-2 items-center"><span class="text-[#9dabb9]">ETH/USD</span> <span class="text-white"
+                    id="ticker-eth">--</span> <span class="text-bull">+1.85%</span></div>
+            <div class="flex gap-2 items-center"><span class="text-[#9dabb9]">SPY</span> <span class="text-white"
+                    id="ticker-spy">--</span> <span class="text-bull">+0.54%</span></div>
+            <div class="flex gap-2 items-center"><span class="text-[#9dabb9]">BTC/USD</span> <span class="text-white"
+                    id="ticker-btc-2">--</span> <span class="text-bull">+2.15%</span></div>
+        </div>
+    </div>
+
+    <div class="flex flex-1 overflow-hidden">
+        <!-- Sidebar Navigation -->
+        <aside class="w-64 border-r border-border-dark bg-[#111418] flex flex-col shrink-0 hidden md:flex">
+            <div class="flex-1 overflow-y-auto py-6 px-3 flex flex-col gap-1">
+                <a href="dashboard.html"
+                    class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-primary/10 text-primary font-medium">
+                    <span class="material-symbols-outlined">dashboard</span>
+                    <span>Dashboard</span>
+                </a>
+                <a href="comparison.html"
+                    class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[#9dabb9] hover:bg-[#283039] hover:text-white transition-colors">
+                    <span class="material-symbols-outlined">compare_arrows</span>
+                    <span>Comparar</span>
+                </a>
+                <a href="alerts.html"
+                    class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[#9dabb9] hover:bg-[#283039] hover:text-white transition-colors">
+                    <span class="material-symbols-outlined">notifications</span>
+                    <span>Alertas</span>
+                </a>
+                <a href="community.html"
+                    class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[#9dabb9] hover:bg-[#283039] hover:text-white transition-colors">
+                    <span class="material-symbols-outlined">forum</span>
+                    <span>Comunidad</span>
+                </a>
+                <a href="settings.html"
+                    class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[#9dabb9] hover:bg-[#283039] hover:text-white transition-colors">
+                    <span class="material-symbols-outlined">settings</span>
+                    <span>Configuración</span>
+                </a>
+            </div>
+
+            <div class="p-4 border-t border-border-dark">
+                <div class="flex items-center gap-3">
+                    <div
+                        class="size-8 rounded-full bg-surface-dark flex items-center justify-center text-primary font-bold">
+                        U</div>
+                    <div class="flex flex-col">
+                        <span class="text-xs font-bold text-white">Usuario Demo</span>
+                        <span class="text-[10px] text-[#9dabb9]">Plan Gratuito</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 flex flex-col min-w-0 bg-[#0b0e11] overflow-hidden relative">
+            <!-- Asset Header -->
+            <div class="h-16 border-b border-border-dark flex items-center justify-between px-6 bg-[#111418] shrink-0">
+                <div class="flex items-center gap-4">
+                    <div class="bg-white/10 rounded-md p-1.5">
+                        <span class="material-symbols-outlined text-white">currency_bitcoin</span>
+                    </div>
+                    <div>
+                        <h1 class="text-white text-lg font-bold leading-none" id="main-name">Bitcoin</h1>
+                        <span class="text-[#9dabb9] text-xs font-medium" id="main-symbol">BTC/USD</span>
+                    </div>
+                    <div class="ml-4">
+                        <span class="text-2xl font-bold text-white leading-none tracking-tight"
+                            id="main-price">$0.00</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TradingView Widget BEGIN -->
+            <div class="flex-1 w-full relative" id="tv-chart-container" style="height: 100%; min-height: 500px;"></div>
+            <!-- TradingView Widget END -->
+        </main>
+
+        <!-- Watchlist Sidebar -->
+        <aside class="w-72 border-l border-border-dark bg-[#111418] flex flex-col shrink-0 hidden lg:flex">
+            <div class="p-4 border-b border-border-dark">
+                <h3 class="text-white font-semibold text-sm">Watchlist</h3>
+            </div>
+            <div class="flex-1 overflow-y-auto">
+                <!-- BTC -->
+                <div onclick="selectAsset('BTC')"
+                    class="flex items-center justify-between px-4 py-3 hover:bg-[#1c2127] cursor-pointer border-b border-border-dark/50 transition-colors">
+                    <div class="flex items-center gap-3">
+                        <div
+                            class="size-8 rounded bg-orange-500/10 flex items-center justify-center text-orange-500 font-bold text-[10px]">
+                            BTC</div>
+                        <div class="flex flex-col">
+                            <span class="text-white text-sm font-medium">Bitcoin</span>
+                            <span class="text-[#9dabb9] text-xs">Crypto</span>
+                        </div>
+                    </div>
+                </div>
+                <!-- ETH -->
+                <div onclick="selectAsset('ETH')"
+                    class="flex items-center justify-between px-4 py-3 hover:bg-[#1c2127] cursor-pointer border-b border-border-dark/50 transition-colors">
+                    <div class="flex items-center gap-3">
+                        <div
+                            class="size-8 rounded bg-purple-500/10 flex items-center justify-center text-purple-500 font-bold text-[10px]">
+                            ETH</div>
+                        <div class="flex flex-col">
+                            <span class="text-white text-sm font-medium">Ethereum</span>
+                            <span class="text-[#9dabb9] text-xs">Crypto</span>
+                        </div>
+                    </div>
+                </div>
+                <!-- SPY -->
+                <div onclick="selectAsset('SPY')"
+                    class="flex items-center justify-between px-4 py-3 hover:bg-[#1c2127] cursor-pointer border-b border-border-dark/50 transition-colors">
+                    <div class="flex items-center gap-3">
+                        <div
+                            class="size-8 rounded bg-green-500/10 flex items-center justify-center text-green-500 font-bold text-[10px]">
+                            SPY</div>
+                        <div class="flex flex-col">
+                            <span class="text-white text-sm font-medium">S&P 500</span>
+                            <span class="text-[#9dabb9] text-xs">Stocks</span>
+                        </div>
+                    </div>
+                </div>
+                <!-- AAPL -->
+                <div onclick="selectAsset('AAPL')"
+                    class="flex items-center justify-between px-4 py-3 hover:bg-[#1c2127] cursor-pointer border-b border-border-dark/50 transition-colors">
+                    <div class="flex items-center gap-3">
+                        <div
+                            class="size-8 rounded bg-blue-500/10 flex items-center justify-center text-blue-500 font-bold text-[10px]">
+                            AAPL</div>
+                        <div class="flex flex-col">
+                            <span class="text-white text-sm font-medium">Apple</span>
+                            <span class="text-[#9dabb9] text-xs">Stocks</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- External Script for Widget -->
+    <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+    <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+
+    <script>
+        // Auth Check
+        const token = localStorage.getItem('access_token');
+        if (!token) window.location.href = 'login.html';
+
+        function logout() {
+            localStorage.removeItem('access_token');
+            window.location.href = 'login.html';
+        }
+
+        // TradingView Widget Logic
+        let tvWidget;
+
+        const assetMap = {
+            'BTC': 'BINANCE:BTCUSDT',
+            'ETH': 'BINANCE:ETHUSDT',
+            'SPY': 'AMEX:SPY',
+            'AAPL': 'NASDAQ:AAPL'
+        };
+
+        const detailsMap = {
+            'BTC': { name: 'Bitcoin', sub: 'BTC/USD' },
+            'ETH': { name: 'Ethereum', sub: 'ETH/USD' },
+            'SPY': { name: 'S&P 500', sub: 'SPY' },
+            'AAPL': { name: 'Apple Inc', sub: 'AAPL' }
+        };
+
+        function initWidget(symbolKey) {
+            const tvSymbol = assetMap[symbolKey] || 'BINANCE:BTCUSDT';
+
+            // Clear container
+            document.getElementById('tv-chart-container').innerHTML = '';
+
+            tvWidget = new TradingView.widget({
+                "autosize": true,
+                "symbol": tvSymbol,
+                "interval": "D",
+                "timezone": "Etc/UTC",
+                "theme": "dark",
+                "style": "1",
+                "locale": "en",
+                "enable_publishing": false,
+                "allow_symbol_change": true,
+                "container_id": "tv-chart-container"
+            });
+        }
+
+        // Public API
+        window.selectAsset = function (symbol) {
+            console.log("Switching to:", symbol);
+
+            // Update Header
+            const info = detailsMap[symbol];
+            if (info) {
+                document.getElementById('main-name').innerText = info.name;
+                document.getElementById('main-symbol').innerText = info.sub;
+            }
+
+            // Update Widget
+            // If the widget is already loaded, we ideally use its API to change symbol, 
+            // but re-instantiating is safer/easier for this "embedded" mode.
+            initWidget(symbol);
+        }
+
+        // Init
+        document.addEventListener('DOMContentLoaded', () => {
+            selectAsset('BTC'); // Default
+        });
+
+    </script>
+</body>
+
+</html>

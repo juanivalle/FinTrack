@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html class="dark" lang="es">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Detalle de Activo - FinTrack</title>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#137fec",
+                        "background-dark": "#0b0e11",
+                        "surface-dark": "#1c2127",
+                        "border-dark": "#283039",
+                        "bull": "#0bda5b",
+                        "bear": "#fa6238",
+                    },
+                    fontFamily: { "display": ["Inter", "sans-serif"] },
+                },
+            },
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #3b4754;
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #5a6b7c;
+        }
+    </style>
+</head>
+
+<body class="bg-background-dark text-white font-display overflow-hidden h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="h-16 border-b border-border-dark bg-[#111418] flex items-center justify-between px-6 shrink-0 z-20">
+        <div class="flex items-center gap-2 text-primary cursor-pointer" onclick="window.location.href='index.html'">
+            <span class="material-symbols-outlined text-3xl">query_stats</span>
+            <span class="text-xl font-bold tracking-tight text-white">FinTrack</span>
+        </div>
+
+        <div class="flex items-center gap-4">
+            <button onclick="logout()"
+                class="flex items-center gap-2 text-sm font-medium text-[#9dabb9] hover:text-white transition-colors">
+                <span class="material-symbols-outlined">logout</span>
+                <span class="hidden sm:inline">Salir</span>
+            </button>
+        </div>
+    </header>
+
+    <div class="flex flex-1 overflow-hidden">
+        <!-- Sidebar Navigation -->
+        <aside class="w-64 border-r border-border-dark bg-[#111418] flex flex-col shrink-0 hidden md:flex">
+            <div class="flex-1 overflow-y-auto py-6 px-3 flex flex-col gap-1">
+                <a href="dashboard.html"
+                    class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[#9dabb9] hover:bg-[#283039] hover:text-white transition-colors">
+                    <span class="material-symbols-outlined">dashboard</span>
+                    <span>Dashboard</span>
+                </a>
+                <a href="comparison.html"
+                    class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[#9dabb9] hover:bg-[#283039] hover:text-white transition-colors">
+                    <span class="material-symbols-outlined">compare_arrows</span>
+                    <span>Comparar</span>
+                </a>
+                <a href="alerts.html"
+                    class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[#9dabb9] hover:bg-[#283039] hover:text-white transition-colors">
+                    <span class="material-symbols-outlined">notifications</span>
+                    <span>Alertas</span>
+                </a>
+                <a href="community.html"
+                    class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[#9dabb9] hover:bg-[#283039] hover:text-white transition-colors">
+                    <span class="material-symbols-outlined">forum</span>
+                    <span>Comunidad</span>
+                </a>
+                <a href="settings.html"
+                    class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[#9dabb9] hover:bg-[#283039] hover:text-white transition-colors">
+                    <span class="material-symbols-outlined">settings</span>
+                    <span>Configuración</span>
+                </a>
+            </div>
+
+            <div class="p-4 border-t border-border-dark">
+                <div class="flex items-center gap-3">
+                    <div
+                        class="size-8 rounded-full bg-surface-dark flex items-center justify-center text-primary font-bold">
+                        U</div>
+                    <div class="flex flex-col">
+                        <span class="text-xs font-bold text-white">Usuario Demo</span>
+                        <span class="text-[10px] text-[#9dabb9]">Plan Gratuito</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 flex flex-col min-w-0 bg-[#0b0e11] overflow-hidden relative">
+            <div class="p-6 flex flex-col gap-6 h-full overflow-y-auto">
+
+                <!-- Dynamic Header -->
+                <div class="flex justify-between items-end mb-2">
+                    <div>
+                        <div class="flex items-center gap-3">
+                            <h1 id="asset-name" class="text-3xl font-bold text-white uppercase">BTC</h1>
+                            <span class="px-2 py-1 bg-surface-dark rounded text-xs text-[#9dabb9] font-mono">USD</span>
+                        </div>
+                        <p id="asset-desc" class="text-[#9dabb9] text-sm mt-1">Real-time Data</p>
+                    </div>
+
+                    <!-- SEARCH BAR -->
+                    <div class="relative group">
+                        <div
+                            class="flex items-center bg-surface-dark border border-border-dark rounded-lg overflow-hidden focus-within:border-primary transition-colors">
+                            <span class="material-symbols-outlined text-[#9dabb9] pl-3 text-[20px]">search</span>
+                            <input type="text" id="symbol-search" placeholder="Cambiar activo (ej. ETH)..."
+                                class="bg-transparent border-none text-white text-sm px-3 py-2 w-56 focus:ring-0 placeholder:text-slate-600 uppercase font-bold"
+                                onkeypress="if(event.key === 'Enter') changeAsset(this.value)">
+                            <button onclick="changeAsset(document.getElementById('symbol-search').value)"
+                                class="pr-3 text-primary hover:text-white transition-colors">
+                                <span class="material-symbols-outlined text-[20px]">arrow_forward</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Price Row -->
+                <div class="flex items-end gap-4 mb-8">
+                    <span id="main-price" class="text-5xl font-bold text-white tracking-tight">$0.00</span>
+                    <div class="flex items-center gap-1 text-bull px-2 py-1 rounded bg-bull/10 mb-2">
+                        <span class="material-symbols-outlined text-sm">trending_up</span>
+                        <span class="text-sm font-bold">LIVE</span>
+                    </div>
+                </div>
+
+                <!-- Grid -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full min-h-0 pb-10">
+
+                    <!-- Main Chart Column -->
+                    <div class="lg:col-span-2 flex flex-col gap-6 min-h-[500px]">
+                        <!-- TradingView Widget -->
+                        <div
+                            class="flex-1 bg-[#111418] rounded-xl border border-border-dark overflow-hidden relative min-h-[500px]">
+                            <div id="tv-chart-container" class="w-full h-full absolute inset-0"></div>
+                        </div>
+                    </div>
+
+                    <!-- Side Panel -->
+                    <div class="flex flex-col gap-6">
+
+                        <!-- Create Alert -->
+                        <div class="bg-surface-dark p-6 rounded-xl border border-border-dark">
+                            <div class="flex justify-between items-center mb-6">
+                                <h3 class="text-white font-bold text-lg">Crear Alerta</h3>
+                                <span class="material-symbols-outlined text-primary">notifications_active</span>
+                            </div>
+
+                            <div class="flex flex-col gap-4">
+                                <div>
+                                    <label class="text-xs font-bold text-[#9dabb9] uppercase mb-2 block">Precio
+                                        Objetivo</label>
+                                    <div
+                                        class="flex items-center bg-[#0b0e11] border border-border-dark rounded-lg px-4 py-3 focus-within:border-primary transition-colors">
+                                        <span class="text-[#9dabb9] mr-2">$</span>
+                                        <input type="number" id="alert-price" placeholder="0.00"
+                                            class="bg-transparent border-none text-white w-full focus:ring-0 p-0 font-mono font-bold">
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label
+                                        class="text-xs font-bold text-[#9dabb9] uppercase mb-2 block">Condición</label>
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <label class="cursor-pointer">
+                                            <input type="radio" name="condition" value="PRICE_ABOVE" checked
+                                                class="peer sr-only">
+                                            <div
+                                                class="flex flex-col items-center justify-center p-3 rounded-lg border border-border-dark bg-[#0b0e11] text-[#9dabb9] peer-checked:bg-primary/20 peer-checked:border-primary peer-checked:text-primary transition-all">
+                                                <span class="material-symbols-outlined">trending_up</span>
+                                                <span class="text-xs font-bold mt-1">Sube de</span>
+                                            </div>
+                                        </label>
+                                        <label class="cursor-pointer">
+                                            <input type="radio" name="condition" value="PRICE_BELOW"
+                                                class="peer sr-only">
+                                            <div
+                                                class="flex flex-col items-center justify-center p-3 rounded-lg border border-border-dark bg-[#0b0e11] text-[#9dabb9] peer-checked:bg-primary/20 peer-checked:border-primary peer-checked:text-primary transition-all">
+                                                <span class="material-symbols-outlined">trending_down</span>
+                                                <span class="text-xs font-bold mt-1">Baja de</span>
+                                            </div>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <button onclick="createAlert()"
+                                    class="w-full bg-primary hover:bg-blue-600 text-white font-bold py-3 rounded-lg transition-colors flex items-center justify-center gap-2">
+                                    Que me avisen
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Sentiment -->
+                        <div class="bg-surface-dark p-6 rounded-xl border border-border-dark">
+                            <h3 class="text-white font-bold text-lg mb-4">Sentimiento</h3>
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-bull text-xs font-bold">72% Compra</span>
+                                <span class="text-bear text-xs font-bold">28% Venta</span>
+                            </div>
+                            <div class="w-full h-2 bg-[#0b0e11] rounded-full overflow-hidden flex">
+                                <div class="h-full bg-bull w-[72%]"></div>
+                                <div class="h-full bg-bear w-[28%]"></div>
+                            </div>
+                            <p class="text-xs text-[#9dabb9] mt-3">Basado en actividad reciente.</p>
+                        </div>
+
+                        <!-- Info -->
+                        <div class="bg-surface-dark p-6 rounded-xl border border-border-dark">
+                            <h3 id="info-header" class="text-white font-bold text-lg mb-2">Información</h3>
+                            <p class="text-[#9dabb9] text-sm leading-relaxed mb-4">
+                                Datos en tiempo real proporcionados por WebSockets y TradingView.
+                            </p>
+                            <div class="space-y-2">
+                                <div class="flex justify-between py-2 border-b border-border-dark">
+                                    <span class="text-[#9dabb9] text-sm">Símbolo</span>
+                                    <span id="info-symbol-text" class="text-white text-sm font-medium">-</span>
+                                </div>
+                                <div class="flex justify-between py-2 border-b border-border-dark">
+                                    <span class="text-[#9dabb9] text-sm">Mercado</span>
+                                    <span class="text-white text-sm font-medium">Global</span>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+    <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+    <script>
+        // --- GLOBAL STATE ---
+        const urlParams = new URLSearchParams(window.location.search);
+        let currentSymbol = (urlParams.get('symbol') || 'BTC').toUpperCase();
+
+        // --- AUTH ---
+        const token = localStorage.getItem('access_token');
+        if (!token) { /* window.location.href='login.html'; */ }
+
+        function logout() {
+            localStorage.removeItem('access_token');
+            window.location.href = 'login.html';
+        }
+
+        function changeAsset(symbol) {
+            if (!symbol) return;
+            window.location.href = `asset-detail.html?symbol=${symbol.toUpperCase()}`;
+        }
+
+        // --- INIT PAGE ---
+        function initPage() {
+            // Update Text Elements
+            document.getElementById('asset-name').innerText = currentSymbol;
+            document.getElementById('info-symbol-text').innerText = currentSymbol;
+            document.getElementById('info-header').innerText = `Sobre ${currentSymbol}`;
+
+            // Initialize TradingView Widget
+            new TradingView.widget({
+                "autosize": true,
+                "symbol": currentSymbol === 'BTC' ? 'BITSTAMP:BTCUSD' : (currentSymbol + 'USD'), // Simple fallback logic
+                "interval": "D",
+                "timezone": "Etc/UTC",
+                "theme": "dark",
+                "style": "1",
+                "locale": "en",
+                "enable_publishing": false,
+                "allow_symbol_change": false, // Disable internal change to force using our Search
+                "container_id": "tv-chart-container",
+                "hide_side_toolbar": false
+            });
+
+            // Connect Socket
+            const socket = io();
+            socket.on('connect', () => {
+                console.log("Connected to WS");
+                socket.emit('subscribeToAsset', currentSymbol);
+            });
+
+            socket.on('priceUpdate', (data) => {
+                // Check if update matches our symbol (fuzzy match for crypto pairs)
+                if (data.symbol === currentSymbol || currentSymbol.includes(data.symbol)) {
+                    const p = parseFloat(data.price);
+                    document.getElementById('main-price').innerText = `$${p.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+
+                    // Auto-fill alert input if empty
+                    const alertInput = document.getElementById('alert-price');
+                    if (!alertInput.value) alertInput.value = p;
+                }
+            });
+        }
+
+        // --- CREATE ALERT ---
+        async function createAlert() {
+            if (!token) {
+                alert("Debes iniciar sesión para crear alertas.");
+                return;
+            }
+
+            const priceVal = document.getElementById('alert-price').value;
+            const price = parseFloat(priceVal);
+            const condition = document.querySelector('input[name="condition"]:checked').value;
+
+            console.log(`CREATING ALERT FOR ${currentSymbol} @ ${price}`);
+
+            try {
+                const res = await fetch('/alerts', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        symbol: currentSymbol, // DYNAMIC SYMBOL
+                        condition: condition,
+                        value: price
+                    })
+                });
+
+                if (res.ok) {
+                    alert(`¡Alerta Creada para ${currentSymbol}!`);
+                } else {
+                    const err = await res.json();
+                    console.error("Backend Error:", err);
+                    alert("Error: " + (err.message || 'Desconocido'));
+                }
+            } catch (e) {
+                console.error("Network Error:", e);
+                alert("Error de red");
+            }
+        }
+
+        // Run Init
+        initPage();
+
+    </script>
+</body>
+
+</html>

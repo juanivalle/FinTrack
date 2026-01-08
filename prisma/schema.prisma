@@ -1,0 +1,135 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum Plan {
+  FREE
+  PREMIUM
+}
+
+enum AssetType {
+  CRYPTO
+  STOCK
+  FOREX
+  COMMODITY
+  INDEX
+}
+
+enum AlertCondition {
+  PRICE_ABOVE
+  PRICE_BELOW
+  CHANGE_PERCENT
+  SMA_CROSS_UP
+  SMA_CROSS_DOWN
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  password     String
+  refreshToken String?
+  role         Role     @default(USER)
+  plan         Plan     @default(FREE)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  name         String?
+  bio          String?
+  location     String?
+  avatarUrl    String?
+
+  alerts       Alert[]
+  posts        Post[]
+  comments     Comment[]
+  votes        Vote[]
+  notifications NotificationLog[]
+
+  followedBy   User[]   @relation("UserFollows")
+  following    User[]   @relation("UserFollows")
+}
+
+model Asset {
+  symbol      String    @id
+  name        String
+  type        AssetType
+  createdAt   DateTime  @default(now())
+  
+  alerts      Alert[]
+}
+
+model Alert {
+  id          String         @id @default(uuid())
+  userId      String
+  symbol      String
+  condition   AlertCondition
+  value       Float
+  isActive    Boolean        @default(true)
+  createdAt   DateTime       @default(now())
+  lastTriggeredAt DateTime?
+
+  user        User           @relation(fields: [userId], references: [id])
+  asset       Asset          @relation(fields: [symbol], references: [symbol])
+}
+
+model NotificationLog {
+  id        String   @id @default(uuid())
+  userId    String
+  message   String
+  channel   String   // EMAIL, WHATSAPP, etc.
+  status    String   // SENT, FAILED
+  sentAt    DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model Post {
+  id        String    @id @default(uuid())
+  title     String
+  content   String
+  mediaUrl  String?
+  mediaType String?   // IMAGE, VIDEO
+  authorId  String
+  createdAt DateTime  @default(now())
+  score     Int       @default(0)
+  views     Int       @default(0)
+  updatedAt DateTime  @updatedAt
+
+  author    User      @relation(fields: [authorId], references: [id])
+  comments  Comment[]
+  votes     Vote[]
+
+  quotedPostId String?
+  quotedPost   Post?   @relation("PostQuotes", fields: [quotedPostId], references: [id])
+  quotedBy     Post[]  @relation("PostQuotes")
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  content   String
+  postId    String
+  authorId  String
+  createdAt DateTime @default(now())
+
+  post      Post     @relation(fields: [postId], references: [id])
+  author    User     @relation(fields: [authorId], references: [id])
+}
+
+model Vote {
+  id        String   @id @default(uuid())
+  value     Int      // 1 or -1
+  postId    String
+  userId    String
+
+  post      Post     @relation(fields: [postId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@unique([postId, userId])
+}
