@@ -8,6 +8,12 @@ import { PrismaPg } from '@prisma/adapter-pg';
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
   constructor(configService: ConfigService) {
     const connectionString = configService.get<string>('DATABASE_URL');
+    console.log(`[PrismaService] DATABASE_URL is ${connectionString ? 'defined' : 'undefined'}`);
+    if (connectionString) {
+      console.log(`[PrismaService] Connecting to: ${connectionString.split('@')[1] || 'URL format error'}`);
+    } else {
+      console.error('[PrismaService] DATABASE_URL IS MISSING! Defaulting to localhost?');
+    }
     const pool = new Pool({ connectionString });
     const adapter = new PrismaPg(pool);
 
