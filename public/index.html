@@ -211,6 +211,37 @@
         <p class="text-slate-600 text-sm">© 2026 FinTrack. Todos los derechos reservados.</p>
     </footer>
 
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const token = localStorage.getItem('access_token');
+            if (token) {
+                // If user has a token, we assume they are logged in.
+
+                // 1. Update Navbar "Iniciar Sesión" -> "Ir al Dashboard"
+                const loginLink = document.querySelector('a[href="login.html"]');
+                if (loginLink) {
+                    loginLink.href = 'dashboard.html';
+                    loginLink.innerText = 'Ir al Dashboard';
+                    loginLink.classList.add('text-primary', 'font-bold');
+                }
+
+                // 2. Update Navbar "Comenzar Gratis" -> "Mi Cuenta"
+                const navRegisterBtn = document.querySelector('nav a[href="register.html"]');
+                if (navRegisterBtn) {
+                    navRegisterBtn.href = 'settings.html';
+                    navRegisterBtn.innerText = 'Mi Cuenta';
+                }
+
+                // 3. Update Hero "Crear Cuenta Gratis" -> "Ir al Dashboard"
+                const heroRegisterBtns = document.querySelectorAll('button[onclick*="register.html"]');
+                heroRegisterBtns.forEach(btn => {
+                    btn.onclick = () => window.location.href = 'dashboard.html';
+                    btn.innerText = 'Ir al Dashboard';
+                });
+            }
+        });
+    </script>
+
 </body>
 
 </html>
