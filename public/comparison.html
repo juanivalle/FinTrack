@@ -100,12 +100,12 @@
 
             <div class="p-4 border-t border-border-dark">
                 <div class="flex items-center gap-3">
-                    <div
+                    <div id="user-avatar"
                         class="size-8 rounded-full bg-surface-dark flex items-center justify-center text-primary font-bold">
                         U</div>
                     <div class="flex flex-col">
-                        <span class="text-xs font-bold text-white">Usuario Demo</span>
-                        <span class="text-[10px] text-[#9dabb9]">Plan Gratuito</span>
+                        <span id="user-name" class="text-xs font-bold text-white">Cargando...</span>
+                        <span id="user-plan" class="text-[10px] text-[#9dabb9]">...</span>
                     </div>
                 </div>
             </div>
@@ -176,7 +176,8 @@
     <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
     <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
     <script>
-        // Auth
+        // Auth Check
+        const API_URL = '';
         const token = localStorage.getItem('access_token');
         if (!token) window.location.href = 'login.html';
 
@@ -184,6 +185,34 @@
             localStorage.removeItem('access_token');
             window.location.href = 'login.html';
         }
+
+        async function loadProfile() {
+            try {
+                const res = await fetch(`${API_URL}/auth/profile`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!res.ok) throw new Error('Failed to load profile');
+                const user = await res.json();
+
+                // Update Sidebar
+                const userName = user.name || user.email.split('@')[0];
+                document.getElementById('user-name').innerText = userName;
+                document.getElementById('user-plan').innerText = user.plan === 'FREE' ? 'Plan Gratuito' : 'Premium';
+
+                // Update Avatar
+                const initial = userName[0].toUpperCase();
+                document.getElementById('user-avatar').innerText = initial;
+            } catch (error) {
+                console.error('Profile Load Error:', error);
+                document.getElementById('user-name').innerText = 'Usuario';
+            }
+        }
+
+        // --- CHART & LOGIC ---
+        document.addEventListener('DOMContentLoaded', () => {
+            loadProfile();
+            // ... existing init logic if any
+        });
 
         // Initialize Comparison Chart
         new TradingView.widget({
