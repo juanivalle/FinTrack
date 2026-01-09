@@ -1,0 +1,9 @@
+-- AlterTable
+ALTER TABLE "User" ADD COLUMN "name" TEXT,
+ADD COLUMN "bio" TEXT,
+ADD COLUMN "location" TEXT,
+ADD COLUMN "avatarUrl" TEXT;
+
+-- AlterTable
+ALTER TABLE "Post" ADD COLUMN "score" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN "views" INTEGER NOT NULL DEFAULT 0;
