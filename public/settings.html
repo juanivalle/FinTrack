@@ -295,6 +295,11 @@
         </main>
     </div>
 
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
+        <!-- Toasts inserted here -->
+    </div>
+
     <!-- Map Modal -->
     <div id="map-modal" class="fixed inset-0 z-50 hidden bg-black/80 flex items-center justify-center backdrop-blur-sm">
         <div
@@ -332,6 +337,44 @@
         let authToken = localStorage.getItem('access_token');
         let map = null;
         let socialData = { followers: [], following: [] };
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+
+            // Colors based on type
+            let bgClass = 'bg-[#283039]';
+            let textClass = 'text-white';
+            let icon = 'info';
+
+            if (type === 'success') {
+                bgClass = 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500';
+                icon = 'check_circle';
+            }
+            if (type === 'error') {
+                bgClass = 'bg-red-500/10 border-red-500/20 text-red-500';
+                icon = 'error';
+            }
+
+            toast.className = `flex items-center gap-3 px-4 py-3 rounded-lg border shadow-lg backdrop-blur-md transform transition-all duration-300 translate-y-10 opacity-0 ${bgClass} border`;
+            toast.innerHTML = `
+                <span class="material-symbols-outlined text-xl">${icon}</span>
+                <span class="text-sm font-medium text-white">${message}</span>
+            `;
+
+            container.appendChild(toast);
+
+            // Animate In
+            requestAnimationFrame(() => {
+                toast.classList.remove('translate-y-10', 'opacity-0');
+            });
+
+            // Animate Out
+            setTimeout(() => {
+                toast.classList.add('translate-y-10', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
 
         function logout() { localStorage.removeItem('access_token'); window.location.href = 'login.html'; }
 
@@ -425,11 +468,11 @@
                     avatarEl.style.backgroundImage = `url('${API_URL}${data.avatarUrl}')`;
                     avatarEl.innerHTML = '';
                 } else {
-                    alert('Error al subir imagen');
+                    showToast('Error al subir imagen', 'error');
                 }
             } catch (e) {
                 console.error(e);
-                alert('Error de conexión al subir imagen');
+                showToast('Error de conexión al subir imagen', 'error');
             }
         }
 
@@ -448,16 +491,16 @@
                 });
 
                 if (res.ok) {
-                    alert('Perfil actualizado correctamente');
+                    showToast('Perfil actualizado correctamente', 'success');
                     loadProfile();
                 } else if (res.status === 400) {
                     const errorData = await res.json();
-                    alert(errorData.message || 'Error: Datos inválidos');
+                    showToast(errorData.message || 'Error: Datos inválidos', 'error');
                 } else {
-                    alert('Error al actualizar perfil. Intenta nuevamente.');
+                    showToast('Error al actualizar perfil. Intenta nuevamente.', 'error');
                 }
             } catch (e) {
-                alert('Error de conexión al guardar: ' + e.message);
+                showToast('Error de conexión al guardar: ' + e.message, 'error');
             }
         }
 
@@ -467,10 +510,10 @@
             const confirmPass = document.getElementById('input-pwd-confirm').value;
 
             if (!currentPass || !newPass || !confirmPass) {
-                return alert("Por favor, llena todos los campos de contraseña.");
+                return showToast("Por favor, llena todos los campos de contraseña.", 'error');
             }
             if (newPass !== confirmPass) {
-                return alert("Las contraseñas nuevas no coinciden.");
+                return showToast("Las contraseñas nuevas no coinciden.", 'error');
             }
 
             try {
@@ -480,11 +523,11 @@
                     body: JSON.stringify({ password: newPass, currentPassword: currentPass })
                 });
                 if (res.ok) {
-                    alert('Contraseña actualizada correctamente. Inicia sesión de nuevo.');
+                    showToast('Contraseña actualizada correctamente. Inicia sesión de nuevo.', 'success');
                     logout();
                 }
-                else alert('Error al actualizar contraseña');
-            } catch (e) { alert('Error de conexión'); }
+                else showToast('Error al actualizar contraseña', 'error');
+            } catch (e) { showToast('Error de conexión', 'error'); }
         }
 
         function togglePasswordForm() {
@@ -507,9 +550,9 @@
             if (!confirm("¿Estás 100% seguro?")) return;
             try {
                 const res = await fetch(`${API_URL}/auth/delete`, { method: 'POST', headers: { 'Authorization': `Bearer ${authToken}` } });
-                if (res.ok) { alert('Cuenta eliminada.'); logout(); }
-                else alert('Error al eliminar cuenta');
-            } catch (e) { alert('Error de conexión'); }
+                if (res.ok) { showToast('Cuenta eliminada.', 'success'); logout(); }
+                else showToast('Error al eliminar cuenta', 'error');
+            } catch (e) { showToast('Error de conexión', 'error'); }
         }
 
         // --- MAP LOGIC ---
@@ -537,7 +580,7 @@
                         document.getElementById('input-location').value = `${city}, ${country}`;
                         closeMapModal();
                     } catch (err) {
-                        alert('No pudimos obtener el nombre de la ciudad. Intenta otra vez.');
+                        showToast('No pudimos obtener el nombre de la ciudad. Intenta otra vez.', 'error');
                     }
                 });
             }

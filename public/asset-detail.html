@@ -367,17 +367,46 @@
             document.getElementById('info-symbol-text').innerText = currentSymbol;
             document.getElementById('info-header').innerText = `Sobre ${currentSymbol}`;
 
+            // Asset Map for TradingView
+            const assetMap = {
+                'BTC': 'BINANCE:BTCUSDT',
+                'ETH': 'BINANCE:ETHUSDT',
+                'SOL': 'BINANCE:SOLUSDT',
+                'BNB': 'BINANCE:BNBUSDT',
+                'XRP': 'BINANCE:XRPUSDT',
+                'ADA': 'BINANCE:ADAUSDT',
+                'SPY': 'AMEX:SPY',
+                'AAPL': 'NASDAQ:AAPL',
+                'TSLA': 'NASDAQ:TSLA',
+                'MSFT': 'NASDAQ:MSFT',
+                'NVDA': 'NASDAQ:NVDA',
+                'GOOGL': 'NASDAQ:GOOGL',
+                'AMZN': 'NASDAQ:AMZN'
+            };
+
+            // Enhanced Symbol Resolution
+            let tvSymbol = assetMap[currentSymbol];
+            if (!tvSymbol) {
+                // Fallback logic
+                if (['BTC', 'ETH', 'SOL', 'BNB', 'XRP', 'ADA'].includes(currentSymbol)) {
+                    tvSymbol = `BINANCE:${currentSymbol}USDT`;
+                } else {
+                    // Stocks default
+                    tvSymbol = `NASDAQ:${currentSymbol}`;
+                }
+            }
+
             // Initialize TradingView Widget
             new TradingView.widget({
                 "autosize": true,
-                "symbol": currentSymbol === 'BTC' ? 'BITSTAMP:BTCUSD' : (currentSymbol + 'USD'), // Simple fallback logic
+                "symbol": tvSymbol,
                 "interval": "D",
                 "timezone": "Etc/UTC",
                 "theme": "dark",
                 "style": "1",
                 "locale": "en",
                 "enable_publishing": false,
-                "allow_symbol_change": false, // Disable internal change to force using our Search
+                "allow_symbol_change": false,
                 "container_id": "tv-chart-container",
                 "hide_side_toolbar": false
             });
