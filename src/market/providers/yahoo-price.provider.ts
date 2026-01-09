@@ -15,34 +15,31 @@ export class YahooPriceProvider implements IPriceProvider {
     };
 
     async getPrice(symbol: string): Promise<PriceData> {
-        // try {
-        // const yahooSymbol = this.symbolMap[symbol] || symbol; 
-        // const quote: any = await yahooFinance.quote(yahooSymbol);
-        // ... (API logic commented out due to rate limits/errors)
-        // } catch (error) { ... }
+        try {
+            const yahooSymbol = this.symbolMap[symbol] || symbol;
+            const quote: any = await yahooFinance.quote(yahooSymbol);
 
-        // MANUAL OVERRIDE MODE: Guaranteeing Stability and Accuracy
-        const fallbacks: Record<string, PriceData> = {
-            'BTC': { symbol: 'BTC', price: '96500.00', change24h: '1.25', timestamp: new Date().toISOString() },
-            'ETH': { symbol: 'ETH', price: '3650.00', change24h: '-0.50', timestamp: new Date().toISOString() },
-            'SOL': { symbol: 'SOL', price: '202.50', change24h: '3.10', timestamp: new Date().toISOString() },
-            'AAPL': { symbol: 'AAPL', price: '242.00', change24h: '0.85', timestamp: new Date().toISOString() },
-            'TSLA': { symbol: 'TSLA', price: '431.00', change24h: '2.40', timestamp: new Date().toISOString() },
-            'SPY': { symbol: 'SPY', price: '595.50', change24h: '0.45', timestamp: new Date().toISOString() },
-            'NVDA': { symbol: 'NVDA', price: '1100.00', change24h: '1.80', timestamp: new Date().toISOString() },
-        };
+            if (!quote) {
+                throw new Error(`No quote found for ${symbol}`);
+            }
 
-        const data = fallbacks[symbol];
-
-        if (data) return data;
-
-        // Generic fallback for others
-        return {
-            symbol,
-            price: '100.00',
-            change24h: '0.00',
-            timestamp: new Date().toISOString()
-        };
+            return {
+                symbol,
+                price: (quote.regularMarketPrice || 0).toFixed(2),
+                change24h: (quote.regularMarketChangePercent || 0).toFixed(2),
+                timestamp: new Date().toISOString()
+            };
+        } catch (error) {
+            this.logger.error(`Yahoo Finance fetch failed for ${symbol}: ${error.message}`);
+            // User requested NO FAKE FALLBACK. 
+            // Return 0.00 to indicate failure explicitly as requested.
+            return {
+                symbol,
+                price: '0.00',
+                change24h: '0.00',
+                timestamp: new Date().toISOString()
+            };
+        }
     }
 }
 

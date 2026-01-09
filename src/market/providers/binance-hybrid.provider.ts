@@ -44,47 +44,19 @@ export class BinanceHybridPriceProvider implements IPriceProvider {
         return map[symbol] || null;
     }
 
-    // State for Crypto (Fallback if API fails)
-    private cryptoState: Record<string, number> = {
-        'BTC': 96500.00,
-        'ETH': 3650.00,
-        'SOL': 195.00,
-        'BNB': 600.00,
-        'XRP': 2.50,
-        'ADA': 1.20
-    };
-
     private async fetchBinancePrice(originalSymbol: string, binanceSymbol: string): Promise<PriceData> {
         try {
             const { data } = await firstValueFrom(this.httpService.get(`${this.BINANCE_API}?symbol=${binanceSymbol}`));
 
-            const price = parseFloat(data.lastPrice);
-            this.cryptoState[originalSymbol] = price; // Update cache
-
             return {
                 symbol: originalSymbol,
-                price: price.toFixed(2),
+                price: parseFloat(data.lastPrice).toFixed(2),
                 change24h: parseFloat(data.priceChangePercent).toFixed(2),
                 timestamp: new Date().toISOString()
             };
         } catch (error) {
-            this.logger.warn(`Binance fetch failed for ${originalSymbol}, using fallback: ${error.message}`);
-
-            // Fallback to simulated data based on last known state
-            const lastPrice = this.cryptoState[originalSymbol] || 1000.00;
-
-            // Add jitter to make it feel alive
-            const volatility = lastPrice * 0.001; // 0.1%
-            const change = (Math.random() - 0.5) * volatility;
-            const newPrice = lastPrice + change;
-            this.cryptoState[originalSymbol] = newPrice;
-
-            return {
-                symbol: originalSymbol,
-                price: newPrice.toFixed(2),
-                change24h: ((Math.random() * 2) - 1).toFixed(2), // Random change% between -1% and +1%
-                timestamp: new Date().toISOString()
-            };
+            this.logger.error(`Binance fetch failed for ${originalSymbol}: ${error.message}`);
+            return { symbol: originalSymbol, price: '0.00', timestamp: new Date().toISOString() };
         }
     }
 

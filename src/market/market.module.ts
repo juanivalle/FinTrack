@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { MarketService } from './market.service';
 import { MarketGateway } from './market.gateway';
-import { BinanceHybridPriceProvider } from './providers/binance-hybrid.provider';
+import { YahooPriceProvider } from './providers/yahoo-price.provider';
 import { RedisModule } from '../redis/redis.module';
 import { MarketController } from './market.controller';
 import { HttpModule } from '@nestjs/axios';
@@ -13,7 +13,7 @@ import { HttpModule } from '@nestjs/axios';
         MarketGateway,
         {
             provide: 'PRICE_PROVIDER',
-            useClass: BinanceHybridPriceProvider,
+            useClass: YahooPriceProvider,
         },
     ],
     controllers: [MarketController],
