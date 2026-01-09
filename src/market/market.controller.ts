@@ -9,7 +9,6 @@ export class MarketController {
     constructor(private marketService: MarketService) { }
 
     @Get('price/:symbol')
-    @UseGuards(JwtAuthGuard)
     @ApiOperation({ summary: 'Get current price of an asset' })
     async getPrice(@Param('symbol') symbol: string) {
         return this.marketService.getPrice(symbol);
