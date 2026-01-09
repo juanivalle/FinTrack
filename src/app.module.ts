@@ -36,6 +36,7 @@ import { join } from 'path';
     AuthModule,
     UsersModule,
     MarketModule,
+    WatchlistModule,
     AlertsModule,
     CommunityModule,
   ],
