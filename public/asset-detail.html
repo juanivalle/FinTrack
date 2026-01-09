@@ -306,7 +306,59 @@
         const API_URL = '';
         let currentSymbol = (urlParams.get('symbol') || 'BTC').toUpperCase().trim();
 
-        // ...
+        // Auth Check
+        const token = localStorage.getItem('access_token');
+        if (!token) window.location.href = 'login.html';
+
+        function logout() {
+            localStorage.removeItem('access_token');
+            window.location.href = 'login.html';
+        }
+
+        async function loadProfile() {
+            try {
+                const res = await fetch(`${API_URL}/auth/profile`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!res.ok) throw new Error('Failed to load profile');
+                const user = await res.json();
+
+                // Update Sidebar
+                const userName = user.name || user.email.split('@')[0];
+                document.getElementById('user-name').innerText = userName;
+                document.getElementById('user-plan').innerText = user.plan === 'FREE' ? 'Plan Gratuito' : 'Premium';
+
+                // Update Avatar
+                const initial = userName[0].toUpperCase();
+                const avatarEl = document.getElementById('user-avatar');
+
+                if (user.avatarUrl) {
+                    avatarEl.innerText = '';
+                    avatarEl.style.backgroundImage = `url('${API_URL}${user.avatarUrl}')`;
+                    avatarEl.style.backgroundSize = 'cover';
+                    avatarEl.style.backgroundPosition = 'center';
+                    avatarEl.classList.remove('text-primary');
+                } else {
+                    avatarEl.innerText = initial;
+                    avatarEl.style.backgroundImage = 'none';
+                    avatarEl.classList.add('text-primary');
+                }
+            } catch (error) {
+                console.error('Profile Load Error:', error);
+                document.getElementById('user-name').innerText = 'Usuario';
+            }
+        }
+
+        // --- ASSET DETAIL LOGIC ---
+        document.addEventListener('DOMContentLoaded', () => {
+            loadProfile();
+            initPage();
+        });
+
+        function changeAsset(symbol) {
+            if (!symbol) return;
+            window.location.href = `asset-detail.html?symbol=${symbol.toUpperCase().trim()}`;
+        }
 
         // --- INIT PAGE ---
         function initPage() {
@@ -427,8 +479,7 @@
             }
         }
 
-        // Run Init
-        initPage();
+        // Run Init via DOMContentLoaded above
 
     </script>
 </body>
