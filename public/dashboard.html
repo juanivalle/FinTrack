@@ -174,64 +174,40 @@
 
         <!-- Watchlist Sidebar -->
         <aside class="w-72 border-l border-border-dark bg-[#111418] flex flex-col shrink-0 hidden lg:flex">
-            <div class="p-4 border-b border-border-dark">
+            <div class="p-4 border-b border-border-dark flex items-center justify-between">
                 <h3 class="text-white font-semibold text-sm">Watchlist</h3>
+                <button onclick="toggleModal('add-asset-modal')"
+                    class="text-[#9dabb9] hover:text-white transition-colors">
+                    <span class="material-symbols-outlined text-xl">add_circle</span>
+                </button>
             </div>
-            <div class="flex-1 overflow-y-auto">
-                <!-- BTC -->
-                <div onclick="selectAsset('BTC')"
-                    class="flex items-center justify-between px-4 py-3 hover:bg-[#1c2127] cursor-pointer border-b border-border-dark/50 transition-colors">
-                    <div class="flex items-center gap-3">
-                        <div
-                            class="size-8 rounded bg-orange-500/10 flex items-center justify-center text-orange-500 font-bold text-[10px]">
-                            BTC</div>
-                        <div class="flex flex-col">
-                            <span class="text-white text-sm font-medium">Bitcoin</span>
-                            <span class="text-[#9dabb9] text-xs">Crypto</span>
-                        </div>
-                    </div>
-                </div>
-                <!-- ETH -->
-                <div onclick="selectAsset('ETH')"
-                    class="flex items-center justify-between px-4 py-3 hover:bg-[#1c2127] cursor-pointer border-b border-border-dark/50 transition-colors">
-                    <div class="flex items-center gap-3">
-                        <div
-                            class="size-8 rounded bg-purple-500/10 flex items-center justify-center text-purple-500 font-bold text-[10px]">
-                            ETH</div>
-                        <div class="flex flex-col">
-                            <span class="text-white text-sm font-medium">Ethereum</span>
-                            <span class="text-[#9dabb9] text-xs">Crypto</span>
-                        </div>
-                    </div>
-                </div>
-                <!-- SPY -->
-                <div onclick="selectAsset('SPY')"
-                    class="flex items-center justify-between px-4 py-3 hover:bg-[#1c2127] cursor-pointer border-b border-border-dark/50 transition-colors">
-                    <div class="flex items-center gap-3">
-                        <div
-                            class="size-8 rounded bg-green-500/10 flex items-center justify-center text-green-500 font-bold text-[10px]">
-                            SPY</div>
-                        <div class="flex flex-col">
-                            <span class="text-white text-sm font-medium">S&P 500</span>
-                            <span class="text-[#9dabb9] text-xs">Stocks</span>
-                        </div>
-                    </div>
-                </div>
-                <!-- AAPL -->
-                <div onclick="selectAsset('AAPL')"
-                    class="flex items-center justify-between px-4 py-3 hover:bg-[#1c2127] cursor-pointer border-b border-border-dark/50 transition-colors">
-                    <div class="flex items-center gap-3">
-                        <div
-                            class="size-8 rounded bg-blue-500/10 flex items-center justify-center text-blue-500 font-bold text-[10px]">
-                            AAPL</div>
-                        <div class="flex flex-col">
-                            <span class="text-white text-sm font-medium">Apple</span>
-                            <span class="text-[#9dabb9] text-xs">Stocks</span>
-                        </div>
-                    </div>
-                </div>
+            <div class="flex-1 overflow-y-auto" id="watchlist-container">
+                <!-- Dynamic Items Injected Here -->
             </div>
         </aside>
+    </div>
+
+    <!-- Add Asset Modal -->
+    <div id="add-asset-modal"
+        class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+        <div class="bg-[#1c2127] border border-border-dark rounded-xl w-full max-w-md overflow-hidden shadow-2xl">
+            <div class="p-4 border-b border-border-dark flex items-center justify-between">
+                <h3 class="font-bold text-white">Agregar Activo</h3>
+                <button onclick="toggleModal('add-asset-modal')" class="text-[#9dabb9] hover:text-white">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <div class="p-4 border-b border-border-dark">
+                <div class="flex items-center bg-[#111418] rounded-lg border border-border-dark px-3 py-2">
+                    <span class="material-symbols-outlined text-[#9dabb9] text-sm">search</span>
+                    <input type="text" id="modal-search-input" placeholder="Buscar (ej. SOL, NVDA)..."
+                        class="bg-transparent border-none focus:ring-0 text-sm w-full text-white placeholder-[#9dabb9] ml-2">
+                </div>
+            </div>
+            <div class="max-h-64 overflow-y-auto p-2" id="modal-search-results">
+                <!-- Search Results -->
+            </div>
+        </div>
     </div>
 
     <!-- External Script for Widget -->
@@ -383,28 +359,164 @@
             initWidget(symbol);
         }
 
-        // --- 5. SEARCH LOGIC ---
-        function initSearch() {
-            const searchInput = document.getElementById('search-input');
-            const watchlistItems = document.querySelectorAll('aside .overflow-y-auto > div');
+        // --- 5. SEARCH LOGIC & MODAL ---
+        const AVAILABLE_ASSETS = [
+            { symbol: 'BTC', name: 'Bitcoin', type: 'Crypto' },
+            { symbol: 'ETH', name: 'Ethereum', type: 'Crypto' },
+            { symbol: 'SOL', name: 'Solana', type: 'Crypto' },
+            { symbol: 'BNB', name: 'Binance Coin', type: 'Crypto' },
+            { symbol: 'XRP', name: 'Ripple', type: 'Crypto' },
+            { symbol: 'ADA', name: 'Cardano', type: 'Crypto' },
+            { symbol: 'SPY', name: 'S&P 500', type: 'Stocks' },
+            { symbol: 'AAPL', name: 'Apple Inc.', type: 'Stocks' },
+            { symbol: 'TSLA', name: 'Tesla', type: 'Stocks' },
+            { symbol: 'MSFT', name: 'Microsoft', type: 'Stocks' },
+            { symbol: 'NVDA', name: 'Nvidia', type: 'Stocks' },
+            { symbol: 'GOOGL', name: 'Alphabet', type: 'Stocks' },
+            { symbol: 'AMZN', name: 'Amazon', type: 'Stocks' }
+        ];
 
-            searchInput.addEventListener('input', (e) => {
-                const term = e.target.value.toLowerCase();
-                watchlistItems.forEach(item => {
-                    const text = item.innerText.toLowerCase();
-                    if (text.includes(term)) {
-                        item.style.display = 'flex';
-                    } else {
-                        item.style.display = 'none';
-                    }
-                });
+        function toggleModal(id) {
+            const el = document.getElementById(id);
+            if (el) {
+                if (el.classList.contains('hidden')) {
+                    el.classList.remove('hidden');
+                    renderSearchResults(''); // Reset search
+                } else {
+                    el.classList.add('hidden');
+                }
+            }
+        }
+
+        function renderSearchResults(term) {
+            const container = document.getElementById('modal-search-results');
+            container.innerHTML = '';
+
+            const filtered = term ? AVAILABLE_ASSETS.filter(a =>
+                a.symbol.toLowerCase().includes(term) || a.name.toLowerCase().includes(term)
+            ) : AVAILABLE_ASSETS;
+
+            filtered.forEach(asset => {
+                const item = document.createElement('div');
+                item.className = "flex items-center justify-between p-3 hover:bg-[#283039] rounded-lg cursor-pointer transition-colors mb-1";
+                item.onclick = () => addToWatchlist(asset);
+                item.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="size-8 rounded bg-primary/10 flex items-center justify-center text-primary font-bold text-[10px]">${asset.symbol}</div>
+                        <div>
+                            <div class="text-white font-medium text-sm">${asset.name}</div>
+                            <div class="text-[#9dabb9] text-xs">${asset.type}</div>
+                        </div>
+                    </div>
+                    <span class="material-symbols-outlined text-[#9dabb9] hover:text-white">add_circle</span>
+                `;
+                container.appendChild(item);
             });
+        }
+
+        document.getElementById('modal-search-input').addEventListener('input', (e) => {
+            renderSearchResults(e.target.value.toLowerCase());
+        });
+
+        // --- 6. WATCHLIST API ---
+        async function loadWatchlist() {
+            try {
+                const res = await fetch(`${API_URL}/watchlist`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!res.ok) throw new Error('Failed to load watchlist');
+                const assets = await res.json();
+                renderWatchlist(assets);
+            } catch (error) {
+                console.error("Watchlist Load Error:", error);
+            }
+        }
+
+        function renderWatchlist(assets) {
+            const container = document.getElementById('watchlist-container');
+            container.innerHTML = '';
+
+            assets.forEach(asset => {
+                const item = document.createElement('div');
+                item.className = "flex items-center justify-between px-4 py-3 hover:bg-[#1c2127] cursor-pointer border-b border-border-dark/50 transition-colors group";
+                item.onclick = (e) => {
+                    // Prevent switching if clicking delete button (if we add one later, for now just click)
+                    selectAsset(asset.symbol);
+                };
+
+                // Color logic
+                let colorClass = 'text-primary bg-primary/10';
+                if (asset.symbol === 'BTC') colorClass = 'text-orange-500 bg-orange-500/10';
+                if (asset.symbol === 'ETH') colorClass = 'text-purple-500 bg-purple-500/10';
+                if (asset.symbol === 'SPY') colorClass = 'text-green-500 bg-green-500/10';
+
+                item.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="size-8 rounded ${colorClass} flex items-center justify-center font-bold text-[10px]">${asset.symbol}</div>
+                        <div class="flex flex-col">
+                            <span class="text-white text-sm font-medium">${asset.name}</span>
+                            <span class="text-[#9dabb9] text-xs">${asset.type}</span>
+                        </div>
+                    </div>
+                `;
+
+                // Add Delete Button (visible on hover)
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = "text-[#9dabb9] hover:text-bear opacity-0 group-hover:opacity-100 transition-opacity p-2";
+                deleteBtn.innerHTML = '<span class="material-symbols-outlined text-sm">delete</span>';
+                deleteBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    removeFromWatchlist(asset.symbol);
+                };
+
+                item.appendChild(deleteBtn);
+                container.appendChild(item);
+            });
+
+            // Also update global asset map/details map dynamically if needed for the chart
+            assets.forEach(a => {
+                if (!detailsMap[a.symbol]) {
+                    detailsMap[a.symbol] = { name: a.name, sub: a.symbol, type: a.type };
+                    // Default generic map
+                    assetMap[a.symbol] = (a.type === 'Crypto' ? `BINANCE:${a.symbol}USDT` : `NASDAQ:${a.symbol}`);
+                }
+            });
+        }
+
+        async function addToWatchlist(asset) {
+            try {
+                await fetch(`${API_URL}/watchlist/${asset.symbol}`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ type: asset.type, name: asset.name })
+                });
+                toggleModal('add-asset-modal');
+                loadWatchlist();
+            } catch (e) {
+                console.error("Add failed", e);
+            }
+        }
+
+        async function removeFromWatchlist(symbol) {
+            if (!confirm('¿Eliminar de watchlist?')) return;
+            try {
+                await fetch(`${API_URL}/watchlist/${symbol}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                loadWatchlist();
+            } catch (e) {
+                console.error("Remove failed", e);
+            }
         }
 
         // --- 6. INITIALIZATION ---
         document.addEventListener('DOMContentLoaded', () => {
             loadProfile();
-            initSearch();
+            loadWatchlist();
             selectAsset('BTC'); // Default load
 
             // Initial Market Data Load

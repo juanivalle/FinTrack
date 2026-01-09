@@ -54,6 +54,8 @@ model User {
 
   followedBy   User[]   @relation("UserFollows")
   following    User[]   @relation("UserFollows")
+
+  watchlist    Asset[]
 }
 
 model Asset {
@@ -63,6 +65,7 @@ model Asset {
   createdAt   DateTime  @default(now())
   
   alerts      Alert[]
+  followedBy  User[]
 }
 
 model Alert {

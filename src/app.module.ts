@@ -5,6 +5,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { MarketModule } from './market/market.module';
+import { WatchlistModule } from './watchlist/watchlist.module';
 import { AlertsModule } from './alerts/alerts.module';
 import { RedisModule } from './redis/redis.module';
 import { CommunityModule } from './community/community.module';
