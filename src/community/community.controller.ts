@@ -1,11 +1,10 @@
-import { Controller, Get, Post, Body, Param, UseGuards, Request, Query, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, UseGuards, Request, Query, UseInterceptors, UploadedFile, HttpException, HttpStatus } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname } from 'path';
 import { CommunityService } from './community.service';
 import { CreatePostDto, CreateCommentDto, CreateVoteDto } from './dto/community.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
 
 @ApiTags('Community')
 @ApiBearerAuth()
@@ -13,7 +12,10 @@ import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 @Controller('community')
 
 export class CommunityController {
-    constructor(private readonly communityService: CommunityService) { }
+    constructor(
+        private readonly communityService: CommunityService,
+        private readonly cloudinaryService: CloudinaryService
+    ) { }
 
     @Post('posts')
     createPost(@Request() req: any, @Body() dto: CreatePostDto) {
@@ -62,20 +64,20 @@ export class CommunityController {
     }
 
     @Post('upload')
-    @UseInterceptors(FileInterceptor('file', {
-        storage: diskStorage({
-            destination: './public/uploads',
-            filename: (req, file, cb) => {
-                const randomName = Array(32).fill(null).map(() => (Math.round(Math.random() * 16)).toString(16)).join('');
-                return cb(null, `${randomName}${extname(file.originalname)}`);
-            }
-        })
-    }))
-    uploadFile(@UploadedFile() file: Express.Multer.File) {
-        console.log("File uploaded:", file);
-        return {
-            url: `/uploads/${file.filename}`,
-            type: file.mimetype.startsWith('image/') ? 'IMAGE' : 'VIDEO'
-        };
+    @UseInterceptors(FileInterceptor('file')) // Memory Storage
+    async uploadFile(@UploadedFile() file: Express.Multer.File) {
+        if (!file) throw new HttpException('File required', HttpStatus.BAD_REQUEST);
+
+        try {
+            const result = await this.cloudinaryService.uploadImage(file);
+            const url = (result as any).secure_url || (result as any).url;
+            return {
+                url: url,
+                type: file.mimetype.startsWith('image/') ? 'IMAGE' : 'VIDEO'
+            };
+        } catch (error) {
+            console.error('Community Upload Error:', error);
+            throw new HttpException('Upload failed', HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 }

@@ -1,7 +1,6 @@
 import { Controller, Post, Body, UseGuards, Request, Get, UseInterceptors, UploadedFile, HttpException, HttpStatus } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname } from 'path';
+import { CloudinaryService } from '../cloudinary/cloudinary.service'; // Import
 import { AuthService } from './auth.service';
 import { UsersService } from '../users/users.service';
 import { LoginDto, RegisterDto, RefreshTokenDto } from './dto/auth.dto';
@@ -13,7 +12,8 @@ import { JwtAuthGuard } from './jwt-auth.guard';
 export class AuthController {
     constructor(
         private authService: AuthService,
-        private usersService: UsersService
+        private usersService: UsersService,
+        private cloudinaryService: CloudinaryService // Injected
     ) { }
 
     @Post('register')
@@ -82,20 +82,20 @@ export class AuthController {
 
     @UseGuards(JwtAuthGuard)
     @Post('avatar')
-    @UseInterceptors(FileInterceptor('file', {
-        storage: diskStorage({
-            destination: './public/uploads/avatars',
-            filename: (req, file, cb) => {
-                const randomName = Array(32).fill(null).map(() => (Math.round(Math.random() * 16)).toString(16)).join('');
-                cb(null, `${randomName}${extname(file.originalname)}`);
-            }
-        })
-    }))
+    @UseInterceptors(FileInterceptor('file')) // No diskStorage, uses Memory (Buffer) by default
     async uploadAvatar(@Request() req: any, @UploadedFile() file: Express.Multer.File) {
         if (!file) throw new Error('File not found');
-        const avatarUrl = `/uploads/avatars/${file.filename}`;
-        await this.usersService.updateProfile(req.user.userId, { avatarUrl });
-        return { avatarUrl };
+
+        try {
+            const result = await this.cloudinaryService.uploadImage(file);
+            // Default to secure_url, check type intersection
+            const avatarUrl = (result as any).secure_url || (result as any).url;
+            await this.usersService.updateProfile(req.user.userId, { avatarUrl });
+            return { avatarUrl };
+        } catch (error) {
+            console.error('Cloudinary Upload Error:', error);
+            throw new HttpException('Failed to upload avatar', HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 }
 
