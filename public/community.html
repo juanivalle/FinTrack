@@ -850,11 +850,24 @@
 
 
         // --- SOCKETS (Market Pulse) ---
-        function initSocket() {
+        async function initSocket() {
             socket = io(API_URL);
             console.log("Initializing Socket...");
 
-            const watchlist = ['BTC', 'ETH', 'SOL', 'AAPL', 'TSLA'];
+            let watchlist = ['BTC', 'ETH', 'SOL', 'AAPL', 'TSLA']; // Default fallback
+
+            try {
+                const res = await fetch(`${API_URL}/watchlist`, { headers: { 'Authorization': `Bearer ${token}` } });
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data && data.length > 0) {
+                        watchlist = data.map(asset => asset.symbol);
+                    }
+                }
+            } catch (e) {
+                console.warn("Failed to load user watchlist for pulse, using default", e);
+            }
+
             const pulseList = document.getElementById('market-pulse-list');
 
             pulseList.innerHTML = watchlist.map(sym => `
@@ -880,10 +893,24 @@
                     const priceEl = row.querySelector('.pulse-price');
                     const changeEl = row.querySelector('.pulse-change');
 
-                    priceEl.innerText = parseFloat(data.price).toFixed(2);
-                    const change = parseFloat(data.change24h);
-                    changeEl.innerText = (change >= 0 ? '+' : '') + change.toFixed(2) + '%';
-                    changeEl.className = `text-xs font-bold pulse-change ${change >= 0 ? 'text-bull' : 'text-bear'}`;
+                    // Safe Parsing
+                    const priceVal = parseFloat(data.price);
+                    const changeVal = parseFloat(data.change24h);
+
+                    const finalPrice = isNaN(priceVal) ? '0.00' : priceVal.toFixed(2);
+                    const finalChange = isNaN(changeVal) ? 0 : changeVal;
+
+                    priceEl.innerText = finalPrice;
+
+                    changeEl.innerText = (finalChange >= 0 ? '+' : '') + finalChange.toFixed(2) + '%';
+
+                    // Remove old colors
+                    changeEl.classList.remove('text-bull', 'text-bear', 'text-[#9dabb9]');
+
+                    // Add new color
+                    if (finalChange > 0) changeEl.classList.add('text-bull');
+                    else if (finalChange < 0) changeEl.classList.add('text-bear');
+                    else changeEl.classList.add('text-[#9dabb9]');
                 }
             });
         }
