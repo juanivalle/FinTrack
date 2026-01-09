@@ -1,4 +1,5 @@
 import { Injectable, Inject } from '@nestjs/common';
+import axios from 'axios';
 import type { IPriceProvider } from './interfaces/price-provider.interface';
 import Redis from 'ioredis';
 
@@ -24,5 +25,38 @@ export class MarketService {
         await this.redis.set(cacheKey, JSON.stringify(data), 'EX', 240);
 
         return data;
+    }
+
+    async searchAssets(query: string) {
+        if (!query || query.length < 2) return [];
+
+        try {
+            const url = `https://symbol-search.tradingview.com/symbol_search?text=${query}&lang=es&limit=10`;
+            const response = await axios.get(url);
+
+            // Map TradingView format to our internal format
+            return response.data.map((item: any) => {
+                let type = 'Stocks';
+                if (item.type === 'crypto') type = 'Crypto';
+                if (item.type === 'forex') type = 'Forex';
+                if (item.type === 'index') type = 'Index';
+
+                // Construct symbol based on type for best compatibility
+                // TV returns "symbol": "BTCUSDT", "exchange": "BINANCE"
+                // We want "BTC" as display symbol, but store logical symbol maybe?
+                // Our generic map uses just the ticker usually.
+
+                return {
+                    symbol: item.symbol,
+                    name: item.description,
+                    type: type,
+                    exchange: item.exchange,
+                    fullSymbol: `${item.exchange}:${item.symbol}`
+                };
+            });
+        } catch (error) {
+            console.error('TradingView Search Error', error);
+            return [];
+        }
     }
 }

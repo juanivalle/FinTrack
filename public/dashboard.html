@@ -421,52 +421,64 @@
         }
 
         // --- 5. SEARCH LOGIC & MODAL ---
-        const AVAILABLE_ASSETS = [
-            { symbol: 'BTC', name: 'Bitcoin', type: 'Crypto' },
-            { symbol: 'ETH', name: 'Ethereum', type: 'Crypto' },
-            { symbol: 'SOL', name: 'Solana', type: 'Crypto' },
-            { symbol: 'BNB', name: 'Binance Coin', type: 'Crypto' },
-            { symbol: 'XRP', name: 'Ripple', type: 'Crypto' },
-            { symbol: 'ADA', name: 'Cardano', type: 'Crypto' },
-            { symbol: 'SPY', name: 'S&P 500', type: 'Stocks' },
-            { symbol: 'AAPL', name: 'Apple Inc.', type: 'Stocks' },
-            { symbol: 'TSLA', name: 'Tesla', type: 'Stocks' },
-            { symbol: 'MSFT', name: 'Microsoft', type: 'Stocks' },
-            { symbol: 'NVDA', name: 'Nvidia', type: 'Stocks' },
-            { symbol: 'GOOGL', name: 'Alphabet', type: 'Stocks' },
-            { symbol: 'AMZN', name: 'Amazon', type: 'Stocks' }
-        ];
+        // --- 5. SEARCH LOGIC & MODAL ---
+        let searchDebounceTimeout;
 
         function toggleModal(id) {
             const el = document.getElementById(id);
             if (el) {
                 if (el.classList.contains('hidden')) {
                     el.classList.remove('hidden');
-                    renderSearchResults(''); // Reset search
+                    // Focus input
+                    setTimeout(() => document.getElementById('modal-search-input').focus(), 100);
                 } else {
                     el.classList.add('hidden');
                 }
             }
         }
 
-        function renderSearchResults(term) {
+        async function searchAssets(term) {
+            if (!term || term.length < 2) {
+                document.getElementById('modal-search-results').innerHTML = '';
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_URL}/market/search?q=${term}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    const results = await res.json();
+                    renderSearchResults(results);
+                }
+            } catch (e) {
+                console.error("Search error", e);
+            }
+        }
+
+        function renderSearchResults(results) {
             const container = document.getElementById('modal-search-results');
             container.innerHTML = '';
 
-            const filtered = term ? AVAILABLE_ASSETS.filter(a =>
-                a.symbol.toLowerCase().includes(term) || a.name.toLowerCase().includes(term)
-            ) : AVAILABLE_ASSETS;
-
-            filtered.forEach(asset => {
+            results.forEach(asset => {
                 const item = document.createElement('div');
                 item.className = "flex items-center justify-between p-3 hover:bg-[#283039] rounded-lg cursor-pointer transition-colors mb-1";
                 item.onclick = () => addToWatchlist(asset);
+
+                let icon = 'attach_money';
+                if (asset.type === 'Crypto') icon = 'currency_bitcoin';
+                if (asset.type === 'Stocks') icon = 'show_chart';
+
                 item.innerHTML = `
                     <div class="flex items-center gap-3">
                         <div class="size-8 rounded bg-primary/10 flex items-center justify-center text-primary font-bold text-[10px]">${asset.symbol}</div>
                         <div>
                             <div class="text-white font-medium text-sm">${asset.name}</div>
-                            <div class="text-[#9dabb9] text-xs">${asset.type}</div>
+                            <div class="flex gap-2 text-[#9dabb9] text-xs">
+                                <span>${asset.type}</span>
+                                <span>•</span>
+                                <span>${asset.exchange}</span>
+                            </div>
                         </div>
                     </div>
                     <span class="material-symbols-outlined text-[#9dabb9] hover:text-white">add_circle</span>
@@ -476,7 +488,9 @@
         }
 
         document.getElementById('modal-search-input').addEventListener('input', (e) => {
-            renderSearchResults(e.target.value.toLowerCase());
+            const term = e.target.value;
+            clearTimeout(searchDebounceTimeout);
+            searchDebounceTimeout = setTimeout(() => searchAssets(term), 500); // 500ms debounce
         });
 
         // --- 6. WATCHLIST API ---

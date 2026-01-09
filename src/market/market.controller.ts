@@ -1,4 +1,4 @@
-import { Controller, Get, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, UseGuards, Query } from '@nestjs/common';
 import { MarketService } from './market.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
@@ -7,6 +7,13 @@ import { ApiTags, ApiOperation } from '@nestjs/swagger';
 @Controller('market')
 export class MarketController {
     constructor(private marketService: MarketService) { }
+
+    @Get('search')
+    @UseGuards(JwtAuthGuard)
+    @ApiOperation({ summary: 'Search assets via TradingView' })
+    async searchAssets(@Query('q') query: string) {
+        return this.marketService.searchAssets(query);
+    }
 
     @Get('price/:symbol')
     @ApiOperation({ summary: 'Get current price of an asset' })
