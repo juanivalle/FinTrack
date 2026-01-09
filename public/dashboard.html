@@ -210,11 +210,60 @@
         </div>
     </div>
 
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed bottom-6 right-6 flex flex-col gap-3 z-50"></div>
+
     <!-- External Script for Widget -->
     <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
     <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
 
     <script>
+        // --- 0. TOAST NOTIFICATIONS ---
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+
+            // Colors based on type
+            let bg = 'bg-[#1c2127]';
+            let border = 'border-border-dark';
+            let icon = 'info';
+            let iconColor = 'text-[#9dabb9]';
+
+            if (type === 'success') {
+                bg = 'bg-[#0f2e1b]'; // Dark green tint
+                border = 'border-bull/30';
+                icon = 'check_circle';
+                iconColor = 'text-bull';
+            } else if (type === 'error') {
+                bg = 'bg-[#2e1212]'; // Dark red tint
+                border = 'border-bear/30';
+                icon = 'error';
+                iconColor = 'text-bear';
+            }
+
+            toast.className = `flex items-center gap-3 px-4 py-3 rounded-lg border ${border} ${bg} text-white shadow-xl transform transition-all duration-300 translate-y-2 opacity-0 min-w-[300px]`;
+            toast.innerHTML = `
+                <span class="material-symbols-outlined ${iconColor}">${icon}</span>
+                <span class="text-sm font-medium flex-1">${message}</span>
+                <button onclick="this.parentElement.remove()" class="text-[#9dabb9] hover:text-white">
+                    <span class="material-symbols-outlined text-sm">close</span>
+                </button>
+            `;
+
+            container.appendChild(toast);
+
+            // Animate in
+            requestAnimationFrame(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            });
+
+            // Auto dismiss
+            setTimeout(() => {
+                toast.classList.add('translate-y-2', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 5000);
+        }
+
         // --- 1. CONFIGURATION ---
         const API_URL = ''; // Relative path for production
         const token = localStorage.getItem('access_token');
@@ -500,23 +549,28 @@
                 }
 
                 toggleModal('add-asset-modal');
+                showToast(`Activo ${asset.symbol} agregado correctamente`, 'success');
                 loadWatchlist();
             } catch (e) {
                 console.error("Add failed", e);
-                alert(`Error al agregar activo: ${e.message}`);
+                showToast(e.message || 'Error al agregar activo', 'error');
             }
         }
 
         async function removeFromWatchlist(symbol) {
             if (!confirm('¿Eliminar de watchlist?')) return;
+            // Ideally convert confirm to a custom modal too, but step by step.
             try {
-                await fetch(`${API_URL}/watchlist/${symbol}`, {
+                const res = await fetch(`${API_URL}/watchlist/${symbol}`, {
                     method: 'DELETE',
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
+                if (!res.ok) throw new Error('Error al eliminar');
+                showToast(`${symbol} eliminado`, 'info');
                 loadWatchlist();
             } catch (e) {
                 console.error("Remove failed", e);
+                showToast('Error al eliminar activo', 'error');
             }
         }
 
