@@ -17,7 +17,7 @@ export class MarketGateway implements OnGatewayConnection, OnGatewayDisconnect, 
         // Start a global ticker for demo purposes
         setInterval(() => {
             this.broadcastUpdates();
-        }, 1000); // 1 second interval
+        }, 5000); // 5 second interval (Optimized for rate limits)
     }
 
     handleConnection(client: Socket) {
