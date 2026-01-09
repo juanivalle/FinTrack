@@ -1,10 +1,24 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { IPriceProvider, PriceData } from '../interfaces/price-provider.interface';
-import yahooFinance from 'yahoo-finance2';
 
 @Injectable()
 export class YahooPriceProvider implements IPriceProvider {
     private readonly logger = new Logger(YahooPriceProvider.name);
+    private yahooFinance: any;
+
+    constructor() {
+        // Dynamic import/require to handle ESM/CommonJS interop quirks in NestJS
+        const pkg = require('yahoo-finance2');
+        // Ensure we get the class constructor
+        const YahooFinance = pkg.YahooFinance || pkg.default?.YahooFinance || pkg.default;
+
+        try {
+            this.yahooFinance = new YahooFinance();
+        } catch (e) {
+            // If it's not a class (already an instance?), fallback
+            this.yahooFinance = YahooFinance;
+        }
+    }
 
     private readonly symbolMap: Record<string, string> = {
         'BTC': 'BTC-USD',
@@ -17,7 +31,7 @@ export class YahooPriceProvider implements IPriceProvider {
     async getPrice(symbol: string): Promise<PriceData> {
         try {
             const yahooSymbol = this.symbolMap[symbol] || symbol;
-            const quote: any = await yahooFinance.quote(yahooSymbol);
+            const quote: any = await this.yahooFinance.quote(yahooSymbol);
 
             if (!quote) {
                 throw new Error(`No quote found for ${symbol}`);
