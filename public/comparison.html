@@ -125,49 +125,7 @@
                     <!-- Widget will be rendered here -->
                 </div>
 
-                <!-- Metrics Table -->
-                <div class="border border-border-dark rounded-xl bg-[#111418] overflow-hidden shrink-0">
-                    <div class="px-6 py-4 border-b border-border-dark">
-                        <h3 class="font-bold text-white">Métricas en Tiempo Real</h3>
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left">
-                            <thead class="bg-[#1c2127] text-xs uppercase text-[#9dabb9]">
-                                <tr>
-                                    <th class="p-4">Activo</th>
-                                    <th class="p-4 text-right">Precio Actual</th>
-                                    <th class="p-4 text-right">Variación (Simulada)</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-border-dark text-sm">
-                                <tr>
-                                    <td class="p-4 flex items-center gap-3">
-                                        <div class="size-2 rounded-full bg-orange-500"></div>
-                                        <span class="font-medium text-white">Bitcoin (BTC)</span>
-                                    </td>
-                                    <td class="p-4 text-right font-mono" id="price-BTC">Loading...</td>
-                                    <td class="p-4 text-right text-bull">+1.2%</td>
-                                </tr>
-                                <tr>
-                                    <td class="p-4 flex items-center gap-3">
-                                        <div class="size-2 rounded-full bg-purple-500"></div>
-                                        <span class="font-medium text-white">Ethereum (ETH)</span>
-                                    </td>
-                                    <td class="p-4 text-right font-mono" id="price-ETH">Loading...</td>
-                                    <td class="p-4 text-right text-bull">+0.8%</td>
-                                </tr>
-                                <tr>
-                                    <td class="p-4 flex items-center gap-3">
-                                        <div class="size-2 rounded-full bg-green-500"></div>
-                                        <span class="font-medium text-white">S&P 500 (SPY)</span>
-                                    </td>
-                                    <td class="p-4 text-right font-mono" id="price-SPY">Loading...</td>
-                                    <td class="p-4 text-right text-bull">+0.5%</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+
             </div>
         </main>
     </div>
@@ -237,19 +195,7 @@
             // We will stick to the main asset + ability to add others.
         });
 
-        // Socket Logic for Table
-        const socket = io();
 
-        socket.on('connect', () => {
-            ['BTC', 'ETH', 'SPY', 'AAPL'].forEach(s => socket.emit('subscribeToAsset', s));
-        });
-
-        socket.on('priceUpdate', (data) => {
-            const el = document.getElementById(`price-${data.symbol}`);
-            if (el) {
-                el.innerText = `$${parseFloat(data.price).toFixed(2)}`;
-            }
-        });
 
     </script>
 </body>

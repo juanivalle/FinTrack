@@ -1,8 +1,11 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { AssetType } from '@prisma/client';
 
 @Injectable()
 export class WatchlistService {
+    private readonly logger = new Logger(WatchlistService.name);
+
     constructor(private prisma: PrismaService) { }
 
     async getUserWatchlist(userId: string) {
@@ -14,31 +17,43 @@ export class WatchlistService {
     }
 
     async addToWatchlist(userId: string, symbol: string, type: string = 'CRYPTO', name: string = '') {
-        // 1. Ensure Asset exists, if not create it (limited/simple version)
-        // In a real app we might validate against external API first
-        const assetType = type === 'Stocks' ? 'STOCK' : 'CRYPTO'; // specific enum map
+        // Map to Prisma Enum safely
+        let assetType: AssetType = AssetType.CRYPTO;
+        if (type.toUpperCase() === 'STOCKS' || type.toUpperCase() === 'STOCK') {
+            assetType = AssetType.STOCK;
+        }
 
-        await this.prisma.asset.upsert({
-            where: { symbol },
-            update: {},
-            create: {
-                symbol,
-                name: name || symbol,
-                type: assetType as any // simplified casting for enum
-            }
-        });
+        this.logger.log(`Adding to watchlist: ${symbol} (${assetType}) for user ${userId}`);
 
-        // 2. Connect to User
-        return this.prisma.user.update({
-            where: { id: userId },
-            data: {
-                watchlist: {
-                    connect: { symbol }
+        try {
+            // 1. Upsert Asset
+            await this.prisma.asset.upsert({
+                where: { symbol },
+                update: {},
+                create: {
+                    symbol,
+                    name: name || symbol,
+                    type: assetType
                 }
-            },
-            include: { watchlist: true }
-        });
+            });
+
+            // 2. Connect
+            return await this.prisma.user.update({
+                where: { id: userId },
+                data: {
+                    watchlist: {
+                        connect: { symbol }
+                    }
+                },
+                include: { watchlist: true }
+            });
+        } catch (e) {
+            this.logger.error(`Failed to add to watchlist: ${e.message}`, e.stack);
+            throw new BadRequestException(`Could not add asset: ${e.message}`);
+        }
     }
+
+
 
     async removeFromWatchlist(userId: string, symbol: string) {
         return this.prisma.user.update({
