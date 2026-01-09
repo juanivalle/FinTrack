@@ -32,7 +32,13 @@ export class MarketService {
 
         try {
             const url = `https://symbol-search.tradingview.com/symbol_search?text=${query}&lang=es&limit=10`;
-            const response = await axios.get(url);
+            const response = await axios.get(url, {
+                headers: {
+                    'Origin': 'https://www.tradingview.com',
+                    'Referer': 'https://www.tradingview.com/',
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+                }
+            });
 
             // Map TradingView format to our internal format
             return response.data.map((item: any) => {
@@ -55,7 +61,7 @@ export class MarketService {
                 };
             });
         } catch (error) {
-            console.error('TradingView Search Error', error);
+            console.error('TradingView Search Error', error.message);
             return [];
         }
     }
