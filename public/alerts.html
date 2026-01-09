@@ -151,9 +151,56 @@
         </main>
     </div>
 
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed bottom-6 right-6 flex flex-col gap-3 z-50"></div>
+
     <script>
         const API_URL = ''; // Relative path
         const token = localStorage.getItem('access_token');
+
+        // --- TOAST NOTIFICATIONS ---
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+
+            // Colors
+            let bg = 'bg-[#1c2127]';
+            let border = 'border-border-dark';
+            let icon = 'info';
+            let iconColor = 'text-[#9dabb9]';
+
+            if (type === 'success') {
+                bg = 'bg-[#0f2e1b]'; // Dark green tint
+                border = 'border-bull/30';
+                icon = 'check_circle';
+                iconColor = 'text-bull';
+            } else if (type === 'error') {
+                bg = 'bg-[#2e1212]'; // Dark red tint
+                border = 'border-bear/30';
+                icon = 'error';
+                iconColor = 'text-bear';
+            }
+
+            toast.className = `flex items-center gap-3 px-4 py-3 rounded-lg border ${border} ${bg} text-white shadow-xl transform transition-all duration-300 translate-y-2 opacity-0 min-w-[300px]`;
+            toast.innerHTML = `
+                <span class="material-symbols-outlined ${iconColor}">${icon}</span>
+                <span class="text-sm font-medium flex-1">${message}</span>
+                <button onclick="this.parentElement.remove()" class="text-[#9dabb9] hover:text-white">
+                    <span class="material-symbols-outlined text-sm">close</span>
+                </button>
+            `;
+
+            container.appendChild(toast);
+
+            // Animate
+            requestAnimationFrame(() => toast.classList.remove('translate-y-2', 'opacity-0'));
+
+            // Dismiss
+            setTimeout(() => {
+                toast.classList.add('translate-y-2', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 5000);
+        }
 
         if (!token) window.location.href = 'login.html';
 
@@ -177,12 +224,26 @@
 
                 // Update Avatar
                 const initial = userName[0].toUpperCase();
-                document.getElementById('user-avatar').innerText = initial;
+                const avatarEl = document.getElementById('user-avatar');
+
+                if (user.avatarUrl) {
+                    avatarEl.innerText = '';
+                    avatarEl.style.backgroundImage = `url('${API_URL}${user.avatarUrl}')`;
+                    avatarEl.style.backgroundSize = 'cover';
+                    avatarEl.style.backgroundPosition = 'center';
+                    avatarEl.classList.remove('text-primary');
+                } else {
+                    avatarEl.innerText = initial;
+                    avatarEl.style.backgroundImage = 'none';
+                    avatarEl.classList.add('text-primary');
+                }
             } catch (error) {
                 console.error('Profile Load Error:', error);
                 document.getElementById('user-name').innerText = 'Usuario';
             }
         }
+                    }
+                }
 
         async function loadAlerts() {
             console.log("Loading alerts...");
@@ -193,7 +254,6 @@
 
                 if (res.ok) {
                     const alerts = await res.json();
-                    console.log("Alerts Loaded:", alerts);
                     renderAlerts(alerts);
                 } else {
                     console.error("Failed to load alerts, status:", res.status);
@@ -201,6 +261,7 @@
                 }
             } catch (e) {
                 console.error("Network error loading alerts:", e);
+                showToast("Error de conexión descargando alertas", "error");
             }
         }
 
@@ -221,9 +282,6 @@
                     ? `<span class="text-bull flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">trending_up</span> Sube de $${alert.value}</span>`
                     : `<span class="text-bear flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">trending_down</span> Baja de $${alert.value}</span>`;
 
-                // DEBUG LOG for each row
-                // console.log("Rendering alert row:", alert.id, alert.symbol);
-
                 tr.innerHTML = `
                     <td class="p-4 font-bold text-white">${alert.symbol}</td>
                     <td class="p-4">${conditionText}</td>
@@ -238,33 +296,27 @@
             });
         }
 
-        // Renamed to requestDelete to avoid naming collisions
         async function requestDelete(id) {
-            console.log("BOTON ELIMINAR CLICKEADO! ID:", id);
+            // Optional: Confirm with custom modal? For now just proceed or Use a toast Undo pattern.
+            // Since user complained about browser alerts, we will just do it, or make a custom simple confirm?
+            // "Menos es más" for now, let's just delete and show success toast.
 
-            // Bypass confirm for debugging
-            // if (!confirm("¿Eliminar alerta?")) { ... }
-
-            console.log("Enviando DELETE request DIRECTO...");
             try {
                 const res = await fetch(`/alerts/${id}`, {
                     method: 'DELETE',
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
-                console.log("DELETE status:", res.status);
-
                 if (res.ok) {
-                    console.log("Eliminación exitosa, recargando...");
+                    showToast("Alerta eliminada correctamente", "success");
                     loadAlerts();
                 } else {
                     const err = await res.json();
-                    console.error("Error delete response:", err);
-                    alert("No se pudo eliminar: " + (err.message || "Error desconocido"));
+                    showToast(err.message || "Error al eliminar alerta", "error");
                 }
             } catch (e) {
                 console.error("Error catch delete:", e);
-                alert("Error de red");
+                showToast("Error de red", "error");
             }
         }
 

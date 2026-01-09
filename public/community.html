@@ -344,9 +344,26 @@
             try {
                 const res = await fetch(`${API_URL}/auth/profile`, { headers: { 'Authorization': `Bearer ${token}` } });
                 userData = await res.json();
+
+                // Composer Avatar
                 const avatarEl = document.getElementById('composer-avatar');
                 if (userData.avatarUrl) avatarEl.style.backgroundImage = `url('${API_URL}${userData.avatarUrl}')`;
                 else avatarEl.style.backgroundImage = `linear-gradient(to top right, #137fec, #93c5fd)`;
+
+                if (sidebarAvatar) {
+                    if (userData.avatarUrl) {
+                        sidebarAvatar.innerText = '';
+                        sidebarAvatar.style.backgroundImage = `url('${API_URL}${userData.avatarUrl}')`;
+                        sidebarAvatar.style.backgroundSize = 'cover';
+                        sidebarAvatar.style.backgroundPosition = 'center';
+                        sidebarAvatar.classList.remove('text-primary');
+                    } else {
+                        const initial = (userData.name || userData.email)[0].toUpperCase();
+                        sidebarAvatar.innerText = initial;
+                        sidebarAvatar.style.backgroundImage = 'none';
+                        sidebarAvatar.classList.add('text-primary');
+                    }
+                }
             } catch (e) { console.error("Auth error", e); }
         }
 

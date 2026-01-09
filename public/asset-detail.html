@@ -254,10 +254,53 @@
         </main>
     </div>
 
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed bottom-6 right-6 flex flex-col gap-3 z-50"></div>
+
     <!-- Scripts -->
     <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
     <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
     <script>
+        // --- TOAST NOTIFICATIONS ---
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+
+            // Colors
+            let bg = 'bg-[#1c2127]';
+            let border = 'border-border-dark';
+            let icon = 'info';
+            let iconColor = 'text-[#9dabb9]';
+
+            if (type === 'success') {
+                bg = 'bg-[#0f2e1b]';
+                border = 'border-bull/30';
+                icon = 'check_circle';
+                iconColor = 'text-bull';
+            } else if (type === 'error') {
+                bg = 'bg-[#2e1212]';
+                border = 'border-bear/30';
+                icon = 'error';
+                iconColor = 'text-bear';
+            }
+
+            toast.className = `flex items-center gap-3 px-4 py-3 rounded-lg border ${border} ${bg} text-white shadow-xl transform transition-all duration-300 translate-y-2 opacity-0 min-w-[300px]`;
+            toast.innerHTML = `
+                <span class="material-symbols-outlined ${iconColor}">${icon}</span>
+                <span class="text-sm font-medium flex-1">${message}</span>
+                <button onclick="this.parentElement.remove()" class="text-[#9dabb9] hover:text-white">
+                    <span class="material-symbols-outlined text-sm">close</span>
+                </button>
+            `;
+
+            container.appendChild(toast);
+            requestAnimationFrame(() => toast.classList.remove('translate-y-2', 'opacity-0'));
+            setTimeout(() => {
+                toast.classList.add('translate-y-2', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 5000);
+        }
+
         // --- GLOBAL STATE ---
         const urlParams = new URLSearchParams(window.location.search);
         const API_URL = '';
@@ -287,7 +330,19 @@
 
                 // Update Avatar
                 const initial = userName[0].toUpperCase();
-                document.getElementById('user-avatar').innerText = initial;
+                const avatarEl = document.getElementById('user-avatar');
+
+                if (user.avatarUrl) {
+                    avatarEl.innerText = '';
+                    avatarEl.style.backgroundImage = `url('${API_URL}${user.avatarUrl}')`;
+                    avatarEl.style.backgroundSize = 'cover';
+                    avatarEl.style.backgroundPosition = 'center';
+                    avatarEl.classList.remove('text-primary');
+                } else {
+                    avatarEl.innerText = initial;
+                    avatarEl.style.backgroundImage = 'none';
+                    avatarEl.classList.add('text-primary');
+                }
             } catch (error) {
                 console.error('Profile Load Error:', error);
                 document.getElementById('user-name').innerText = 'Usuario';
@@ -350,7 +405,7 @@
         // --- CREATE ALERT ---
         async function createAlert() {
             if (!token) {
-                alert("Debes iniciar sesión para crear alertas.");
+                showToast("Debes iniciar sesión para crear alertas.", "error");
                 return;
             }
 
@@ -375,15 +430,15 @@
                 });
 
                 if (res.ok) {
-                    alert(`¡Alerta Creada para ${currentSymbol}!`);
+                    showToast(`¡Alerta Creada para ${currentSymbol}!`, "success");
                 } else {
                     const err = await res.json();
                     console.error("Backend Error:", err);
-                    alert("Error: " + (err.message || 'Desconocido'));
+                    showToast(err.message || 'Error desconocido', "error");
                 }
             } catch (e) {
                 console.error("Network Error:", e);
-                alert("Error de red");
+                showToast("Error de red", "error");
             }
         }
 

@@ -275,26 +275,20 @@
             window.location.href = 'login.html';
         }
 
-        async function loadProfile() {
-            try {
-                const res = await fetch(`${API_URL}/auth/profile`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (!res.ok) throw new Error('Failed to load profile');
-                const user = await res.json();
+        // Update Avatar
+        const initial = userName[0].toUpperCase();
+        const avatarEl = document.getElementById('user-avatar');
 
-                // Update Sidebar
-                const userName = user.name || user.email.split('@')[0];
-                document.getElementById('user-name').innerText = userName;
-                document.getElementById('user-plan').innerText = user.plan === 'FREE' ? 'Plan Gratuito' : 'Premium';
-
-                // Update Avatar
-                const initial = userName[0].toUpperCase();
-                document.getElementById('user-avatar').innerText = initial;
-            } catch (error) {
-                console.error('Profile Load Error:', error);
-                document.getElementById('user-name').innerText = 'Usuario';
-            }
+        if (user.avatarUrl) {
+            avatarEl.innerText = '';
+            avatarEl.style.backgroundImage = `url('${API_URL}${user.avatarUrl}')`;
+            avatarEl.style.backgroundSize = 'cover';
+            avatarEl.style.backgroundPosition = 'center';
+            avatarEl.classList.remove('text-primary'); // Remove text color to avoid interference
+        } else {
+            avatarEl.innerText = initial;
+            avatarEl.style.backgroundImage = 'none';
+            avatarEl.classList.add('text-primary');
         }
 
         // --- 3. MARKET DATA LOGIC ---
