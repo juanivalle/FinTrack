@@ -79,7 +79,7 @@
         <div class="flex items-center gap-4">
             <div class="hidden md:flex items-center bg-[#1c2127] rounded-lg border border-border-dark px-3 py-1.5 w-64">
                 <span class="material-symbols-outlined text-[#9dabb9] text-sm">search</span>
-                <input type="text" placeholder="Buscar activo (BTC, AAPL)..."
+                <input type="text" id="search-input" placeholder="Buscar activo (BTC, AAPL)..."
                     class="bg-transparent border-none focus:ring-0 text-sm w-full text-white placeholder-[#9dabb9]">
             </div>
             <button onclick="logout()"
@@ -137,12 +137,12 @@
 
             <div class="p-4 border-t border-border-dark">
                 <div class="flex items-center gap-3">
-                    <div
+                    <div id="user-avatar"
                         class="size-8 rounded-full bg-surface-dark flex items-center justify-center text-primary font-bold">
                         U</div>
                     <div class="flex flex-col">
-                        <span class="text-xs font-bold text-white">Usuario Demo</span>
-                        <span class="text-[10px] text-[#9dabb9]">Plan Gratuito</span>
+                        <span id="user-name" class="text-xs font-bold text-white">Cargando...</span>
+                        <span id="user-plan" class="text-[10px] text-[#9dabb9]">...</span>
                     </div>
                 </div>
             </div>
@@ -239,17 +239,44 @@
     <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
 
     <script>
-        // Auth Check
+        // --- 1. CONFIGURATION ---
+        const API_URL = ''; // Relative path for production
         const token = localStorage.getItem('access_token');
         if (!token) window.location.href = 'login.html';
 
+        // --- 2. AUTH & PROFILE ---
         function logout() {
             localStorage.removeItem('access_token');
             window.location.href = 'login.html';
         }
 
-        // TradingView Widget Logic
-        let tvWidget;
+        async function loadProfile() {
+            try {
+                const res = await fetch(`${API_URL}/auth/profile`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!res.ok) throw new Error('Failed to load profile');
+                const user = await res.json();
+
+                // Update Sidebar
+                const userName = user.name || user.email.split('@')[0];
+                document.getElementById('user-name').innerText = userName;
+                document.getElementById('user-plan').innerText = user.plan === 'FREE' ? 'Plan Gratuito' : 'Premium';
+
+                // Update Avatar
+                const initial = userName[0].toUpperCase();
+                document.getElementById('user-avatar').innerText = initial;
+            } catch (error) {
+                console.error('Profile Load Error:', error);
+                document.getElementById('user-name').innerText = 'Usuario';
+            }
+        }
+
+        // --- 3. MARKET DATA LOGIC ---
+        const state = {
+            currentSymbol: 'BTC',
+            prices: {}
+        };
 
         const assetMap = {
             'BTC': 'BINANCE:BTCUSDT',
@@ -259,18 +286,69 @@
         };
 
         const detailsMap = {
-            'BTC': { name: 'Bitcoin', sub: 'BTC/USD' },
-            'ETH': { name: 'Ethereum', sub: 'ETH/USD' },
-            'SPY': { name: 'S&P 500', sub: 'SPY' },
-            'AAPL': { name: 'Apple Inc', sub: 'AAPL' }
+            'BTC': { name: 'Bitcoin', sub: 'BTC/USD', type: 'Crypto' },
+            'ETH': { name: 'Ethereum', sub: 'ETH/USD', type: 'Crypto' },
+            'SPY': { name: 'S&P 500', sub: 'SPY', type: 'Stocks' },
+            'AAPL': { name: 'Apple Inc', sub: 'AAPL', type: 'Stocks' }
         };
 
+        // Fetch single price
+        async function fetchPrice(symbol) {
+            try {
+                const res = await fetch(`${API_URL}/market/price/${symbol}`);
+                if (!res.ok) return null;
+                return await res.json(); // { symbol, price, change24h }
+            } catch (e) {
+                console.warn(`Price fetch failed for ${symbol}`, e);
+                return null;
+            }
+        }
+
+        // Update all visible prices (Marquee + Main)
+        async function updateMarketData() {
+            const symbols = ['BTC', 'ETH', 'SPY', 'AAPL', 'TSLA'];
+
+            for (const sym of symbols) {
+                const data = await fetchPrice(sym);
+                if (data) {
+                    state.prices[sym] = data;
+
+                    // Update Marquee if element exists
+                    const tickerEl = document.getElementById(`ticker-${sym.toLowerCase()}`);
+                    if (tickerEl) {
+                        tickerEl.innerText = parseFloat(data.price).toFixed(2);
+                        // Update color if we had change data (mock doesn't always return change correctly formatted)
+                        const change = parseFloat(data.change24h || 0);
+                        const parent = tickerEl.parentElement;
+                        const changeEl = parent.querySelector('span:last-child');
+                        if (changeEl) {
+                            changeEl.innerText = (change >= 0 ? '+' : '') + change + '%';
+                            changeEl.className = change >= 0 ? 'text-bull' : 'text-bear';
+                        }
+                    }
+
+                    // Update Main Price if selected
+                    if (sym === state.currentSymbol) {
+                        updateMainPriceDisplay(data);
+                    }
+                }
+            }
+        }
+
+        function updateMainPriceDisplay(data) {
+            const priceEl = document.getElementById('main-price');
+            priceEl.innerText = '$' + parseFloat(data.price).toLocaleString('en-US', { minimumFractionDigits: 2 });
+
+            // Should add a color flash effect here ideally
+            priceEl.style.color = 'white';
+            setTimeout(() => { priceEl.style.color = ''; }, 200);
+        }
+
+        // --- 4. TRADINGVIEW & SELECTION ---
+        let tvWidget;
         function initWidget(symbolKey) {
             const tvSymbol = assetMap[symbolKey] || 'BINANCE:BTCUSDT';
-
-            // Clear container
             document.getElementById('tv-chart-container').innerHTML = '';
-
             tvWidget = new TradingView.widget({
                 "autosize": true,
                 "symbol": tvSymbol,
@@ -281,30 +359,59 @@
                 "locale": "en",
                 "enable_publishing": false,
                 "allow_symbol_change": true,
-                "container_id": "tv-chart-container"
+                "container_id": "tv-chart-container",
+                "hide_side_toolbar": false
             });
         }
 
-        // Public API
-        window.selectAsset = function (symbol) {
+        window.selectAsset = async function (symbol) {
+            state.currentSymbol = symbol;
             console.log("Switching to:", symbol);
 
-            // Update Header
+            // Update Header Info
             const info = detailsMap[symbol];
             if (info) {
                 document.getElementById('main-name').innerText = info.name;
                 document.getElementById('main-symbol').innerText = info.sub;
             }
 
+            // Fetch latest price immediately
+            const data = await fetchPrice(symbol);
+            if (data) updateMainPriceDisplay(data);
+
             // Update Widget
-            // If the widget is already loaded, we ideally use its API to change symbol, 
-            // but re-instantiating is safer/easier for this "embedded" mode.
             initWidget(symbol);
         }
 
-        // Init
+        // --- 5. SEARCH LOGIC ---
+        function initSearch() {
+            const searchInput = document.getElementById('search-input');
+            const watchlistItems = document.querySelectorAll('aside .overflow-y-auto > div');
+
+            searchInput.addEventListener('input', (e) => {
+                const term = e.target.value.toLowerCase();
+                watchlistItems.forEach(item => {
+                    const text = item.innerText.toLowerCase();
+                    if (text.includes(term)) {
+                        item.style.display = 'flex';
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+            });
+        }
+
+        // --- 6. INITIALIZATION ---
         document.addEventListener('DOMContentLoaded', () => {
-            selectAsset('BTC'); // Default
+            loadProfile();
+            initSearch();
+            selectAsset('BTC'); // Default load
+
+            // Initial Market Data Load
+            updateMarketData();
+
+            // Polling for prices every 10 seconds
+            setInterval(updateMarketData, 10000);
         });
 
     </script>
