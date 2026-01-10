@@ -227,7 +227,7 @@
             <div class="relative">
                 <span
                     class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-[#5b6a78]">search</span>
-                <input
+                <input id="community-search-input"
                     class="w-full bg-[#1c2127] border-none rounded-full py-2.5 pl-10 pr-4 text-sm text-white focus:ring-1 focus:ring-primary placeholder-[#5b6a78]"
                     placeholder="Buscar en FinTrack" />
             </div>
@@ -1028,6 +1028,84 @@
 
         function logout() { localStorage.removeItem('access_token'); window.location.href = 'login.html'; }
 
+        // --- SEARCH ---
+        let searchTimeout;
+        const searchInput = document.getElementById('community-search-input');
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => {
+                clearTimeout(searchTimeout);
+                const query = e.target.value.trim();
+
+                if (query.length === 0) {
+                    reloadFeed();
+                    return;
+                }
+
+                if (query.length < 2) return;
+
+                searchTimeout = setTimeout(() => performSearch(query), 400);
+            });
+        }
+
+        async function performSearch(query) {
+            isLoading = true;
+            const container = document.getElementById('feed-container');
+            container.innerHTML = '<div class="p-10 text-center"><span class="loading-spinner h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin inline-block"></span></div>';
+
+            try {
+                const res = await fetch(`${API_URL}/community/search?q=${encodeURIComponent(query)}`, { headers: { 'Authorization': `Bearer ${token}` } });
+                const data = await res.json();
+
+                container.innerHTML = '';
+
+                // Header
+                container.insertAdjacentHTML('beforeend', `<h3 class="text-white font-bold text-lg mb-4">Resultados para "${query}"</h3>`);
+
+                // Users Section
+                if (data.users && data.users.length > 0) {
+                    const usersHtml = data.users.map(u => {
+                        const displayName = u.name || u.email.split('@')[0] || 'Unknown';
+                        const initial = displayName[0].toUpperCase();
+                        const avatar = u.avatarUrl ? `<div class="h-10 w-10 rounded-full bg-cover bg-center border border-[#283039]" style="background-image: url('${API_URL}${u.avatarUrl}')"></div>`
+                            : `<div class="h-10 w-10 rounded-full bg-gradient-to-tr from-primary to-blue-300 flex items-center justify-center font-bold text-sm border border-[#283039] text-white">${initial}</div>`;
+
+                        return `
+                            <div class="flex flex-col items-center gap-2 p-3 bg-[#1c2127] rounded-xl border border-[#283039] w-28 flex-shrink-0 cursor-pointer hover:border-[#3b4754] transition" onclick="openUserProfile('${u.id}')">
+                                ${avatar}
+                                <p class="text-xs font-bold text-white truncate w-full text-center">${displayName}</p>
+                            </div>
+                        `;
+                    }).join('');
+
+                    container.insertAdjacentHTML('beforeend', `
+                        <div class="mb-6">
+                            <h4 class="text-[#9dabb9] text-sm font-bold uppercase tracking-wider mb-3">Personas</h4>
+                            <div class="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+                                ${usersHtml}
+                            </div>
+                        </div>
+                    `);
+                }
+
+                // Posts Section
+                container.insertAdjacentHTML('beforeend', `<h4 class="text-[#9dabb9] text-sm font-bold uppercase tracking-wider mb-3">Publicaciones</h4>`);
+
+                if (data.posts && data.posts.length > 0) {
+                    data.posts.forEach(p => postsMap.set(p.id, p));
+                    const postsHtml = data.posts.map(post => createPostHTML(post)).join('');
+                    container.insertAdjacentHTML('beforeend', postsHtml);
+                } else {
+                    container.insertAdjacentHTML('beforeend', `<div class="text-[#5b6a78] text-center py-10">No se encontraron publicaciones.</div>`);
+                }
+
+            } catch (e) {
+                console.error(e);
+                container.innerHTML = '<div class="text-red-500 text-center py-10">Error al buscar.</div>';
+            } finally {
+                isLoading = false;
+            }
+        }
+
         // --- SUGGESTIONS & PROFILES ---
         async function loadSuggestions() {
             const container = document.getElementById('suggestions-list');
@@ -1142,10 +1220,13 @@
                 if (!res.ok) throw new Error('Error loading profile');
                 const user = await res.json();
 
+                const displayName = user.name || user.email.split('@')[0] || 'Unknown';
+                const initial = displayName[0].toUpperCase();
+
                 // Populate Info
-                document.getElementById('profile-modal-name').innerText = user.name;
+                document.getElementById('profile-modal-name').innerText = displayName;
                 document.getElementById('profile-modal-posts-count').innerText = `${user._count.posts} posts`;
-                document.getElementById('profile-info-name').innerText = user.name;
+                document.getElementById('profile-info-name').innerText = displayName;
                 document.getElementById('profile-info-handle').innerText = `@${user.email.split('@')[0]}`;
                 document.getElementById('profile-followers-count').innerText = user._count.followers;
                 document.getElementById('profile-following-count').innerText = user._count.following;
@@ -1158,13 +1239,17 @@
                     avatarEl.classList.remove('bg-primary', 'text-white');
                 } else {
                     avatarEl.style.backgroundImage = 'none';
-                    avatarEl.innerText = user.name[0];
+                    avatarEl.innerText = initial;
                     avatarEl.classList.add('bg-primary', 'text-white');
                 }
 
                 // Action Button (Follow/Edit)
                 const actionBtn = document.getElementById('profile-action-btn');
                 const isMe = user.id === userData.id;
+
+                // Remove existing listeners to prevent stacking if using addEventListener (we use onclick property so it's fine)
+                actionBtn.onmouseenter = null;
+                actionBtn.onmouseleave = null;
 
                 if (isMe) {
                     actionBtn.innerText = 'Editar perfil';
@@ -1181,8 +1266,6 @@
                     } else {
                         actionBtn.innerText = 'Seguir';
                         actionBtn.className = "px-4 py-1.5 rounded-full font-bold text-sm bg-white text-black hover:bg-white/90 transition w-32";
-                        actionBtn.onmouseenter = null;
-                        actionBtn.onmouseleave = null;
                         actionBtn.onclick = () => followUser(user.id, actionBtn);
                     }
                 }
@@ -1195,7 +1278,7 @@
                 }
 
             } catch (e) {
-                console.error(e);
+                console.error("Profile Error:", e);
                 showToast('Error al cargar perfil', 'error');
                 closeUserProfile();
             }

@@ -201,4 +201,46 @@ export class CommunityService {
             posts: enrichedPosts
         };
     }
+    async searchCommunity(query: string, userId: string) {
+        if (!query || query.length < 2) return { users: [], posts: [] };
+
+        const [users, posts] = await Promise.all([
+            // Search Users
+            this.prisma.user.findMany({
+                where: {
+                    OR: [
+                        { name: { contains: query, mode: 'insensitive' } },
+                        { email: { contains: query, mode: 'insensitive' } }
+                    ],
+                    NOT: { id: userId }
+                },
+                take: 5,
+                select: { id: true, email: true, name: true, avatarUrl: true }
+            }),
+            // Search Posts
+            this.prisma.post.findMany({
+                where: {
+                    OR: [
+                        { title: { contains: query, mode: 'insensitive' } },
+                        { content: { contains: query, mode: 'insensitive' } }
+                    ]
+                },
+                take: 20,
+                orderBy: { createdAt: 'desc' },
+                include: {
+                    author: { select: { email: true, id: true, name: true, avatarUrl: true } },
+                    _count: { select: { comments: true } },
+                    votes: { where: { userId: userId } }
+                }
+            })
+        ]);
+
+        const enrichedPosts = posts.map(post => ({
+            ...post,
+            isLiked: post.votes?.[0]?.value === 1,
+            commentCount: post._count.comments
+        }));
+
+        return { users, posts: enrichedPosts };
+    }
 }

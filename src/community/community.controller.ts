@@ -85,4 +85,8 @@ export class CommunityController {
             throw new HttpException('Upload failed', HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+    @Get('search')
+    search(@Request() req: any, @Query('q') query: string) {
+        return this.communityService.searchCommunity(query, req.user.userId);
+    }
 }
