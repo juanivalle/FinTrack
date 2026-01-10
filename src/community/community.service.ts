@@ -160,7 +160,7 @@ export class CommunityService {
     async getUserProfile(requesterId: string, targetId: string) {
         const user = await this.prisma.user.findUnique({
             where: { id: targetId },
-            select: { id: true, email: true, name: true, avatarUrl: true, createdAt: true, _count: { select: { followers: true, following: true, posts: true } } }
+            select: { id: true, email: true, name: true, avatarUrl: true, createdAt: true, _count: { select: { followedBy: true, following: true, posts: true } } }
         });
 
         if (!user) throw new Error('User not found');
@@ -193,6 +193,10 @@ export class CommunityService {
 
         return {
             ...user,
+            _count: {
+                ...user._count,
+                followers: user._count.followedBy // Map for frontend
+            },
             isFollowing,
             posts: enrichedPosts
         };
