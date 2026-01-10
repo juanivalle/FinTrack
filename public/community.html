@@ -1041,14 +1041,17 @@
                     }
 
                     container.innerHTML = users.map(u => {
+                        const displayName = u.name || u.email.split('@')[0] || 'Unknown';
+                        const initial = displayName[0].toUpperCase();
+
                         const avatar = u.avatarUrl ? `<div class="h-8 w-8 rounded-full flex-shrink-0 bg-cover bg-center border border-[#283039]" style="background-image: url('${API_URL}${u.avatarUrl}')"></div>`
-                            : `<div class="h-8 w-8 rounded-full flex-shrink-0 bg-gradient-to-tr from-primary to-blue-300 flex items-center justify-center font-bold text-xs border border-[#283039]">${u.name[0]}</div>`;
+                            : `<div class="h-8 w-8 rounded-full flex-shrink-0 bg-gradient-to-tr from-primary to-blue-300 flex items-center justify-center font-bold text-xs border border-[#283039] text-white">${initial}</div>`;
 
                         return `
                             <div class="flex items-center gap-3 p-2 hover:bg-[#283039] rounded-lg cursor-pointer transition" onclick="openUserProfile('${u.id}')">
                                 ${avatar}
                                 <div class="flex-1 min-w-0">
-                                    <p class="text-sm font-bold text-white truncate hover:underline">${u.name}</p>
+                                    <p class="text-sm font-bold text-white truncate hover:underline">${displayName}</p>
                                     <p class="text-xs text-[#9dabb9] truncate">@${u.email.split('@')[0]}</p>
                                 </div>
                                 <button onclick="event.stopPropagation(); followUser('${u.id}', this)" class="text-xs bg-white text-black px-3 py-1.5 rounded-full font-bold hover:bg-white/90 transition transform active:scale-95">
@@ -1058,7 +1061,10 @@
                         `;
                     }).join('');
                 }
-            } catch (e) { console.error(e); }
+            } catch (e) {
+                console.error("Suggestions Error:", e);
+                container.innerHTML = '<div class="text-center text-red-500 text-xs">Error al cargar.</div>';
+            }
         }
 
         async function followUser(userId, btn) {
