@@ -321,6 +321,89 @@
         </div>
     </div>
 
+    <!-- User Profile Modal (NEW) -->
+    <div id="user-profile-modal"
+        class="fixed inset-0 z-50 hidden bg-black/90 flex flex-col items-center overflow-hidden backdrop-blur-sm">
+        <div
+            class="w-full max-w-2xl flex-1 flex flex-col bg-[#111418] border-x border-[#283039] overflow-hidden relative">
+
+            <!-- Sticky Header -->
+            <div
+                class="h-14 flex items-center gap-4 px-4 border-b border-[#283039] bg-[#111418]/80 backdrop-blur-md sticky top-0 z-10">
+                <button onclick="closeUserProfile()"
+                    class="p-2 -ml-2 rounded-full hover:bg-[#283039] transition text-white">
+                    <span class="material-symbols-outlined">arrow_back</span>
+                </button>
+                <div class="flex flex-col">
+                    <h3 class="text-lg font-bold text-white leading-none" id="profile-modal-name">Nombre</h3>
+                    <span class="text-xs text-[#9dabb9]" id="profile-modal-posts-count">0 posts</span>
+                </div>
+            </div>
+
+            <!-- Scrollable Content -->
+            <div class="flex-1 overflow-y-auto" id="profile-scroll">
+
+                <!-- Profile Header -->
+                <div class="relative">
+                    <!-- Banner -->
+                    <div class="h-32 bg-gradient-to-r from-primary/20 to-purple-500/20"></div>
+
+                    <!-- Avatar -->
+                    <div class="absolute -bottom-10 left-4">
+                        <div id="profile-modal-avatar"
+                            class="h-20 w-20 rounded-full border-4 border-[#111418] bg-[#1c2127] flex items-center justify-center text-2xl font-bold"
+                            style="background-size: cover; background-position: center;">
+                        </div>
+                    </div>
+
+                    <!-- Edit/Follow Button -->
+                    <div class="flex justify-end p-4">
+                        <button id="profile-action-btn"
+                            class="px-4 py-1.5 rounded-full font-bold text-sm bg-white text-black hover:bg-white/90 transition">
+                            Seguir
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Profile Info -->
+                <div class="px-4 mt-2 pb-4 border-b border-[#283039]">
+                    <h2 class="text-xl font-black text-white" id="profile-info-name">Nombre</h2>
+                    <p class="text-[#9dabb9] text-sm" id="profile-info-handle">@usuario</p>
+
+                    <div class="flex gap-4 mt-4 text-sm">
+                        <div class="flex gap-1 hover:underline cursor-pointer">
+                            <span class="font-bold text-white" id="profile-following-count">0</span>
+                            <span class="text-[#9dabb9]">Siguiendo</span>
+                        </div>
+                        <div class="flex gap-1 hover:underline cursor-pointer">
+                            <span class="font-bold text-white" id="profile-followers-count">0</span>
+                            <span class="text-[#9dabb9]">Seguidores</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabs -->
+                <div class="flex border-b border-[#283039]">
+                    <div class="flex-1 text-center py-3 hover:bg-[#1c2127] cursor-pointer relative">
+                        <span class="font-bold text-white">Posts</span>
+                        <div class="absolute bottom-0 left-0 w-full h-1 bg-primary rounded-t-full"></div>
+                    </div>
+                    <div class="flex-1 text-center py-3 hover:bg-[#1c2127] cursor-pointer text-[#9dabb9]">
+                        <span class="font-medium">Respuestas</span>
+                    </div>
+                    <div class="flex-1 text-center py-3 hover:bg-[#1c2127] cursor-pointer text-[#9dabb9]">
+                        <span class="font-medium">Me gusta</span>
+                    </div>
+                </div>
+
+                <!-- User Posts Feed -->
+                <div id="profile-posts-container" class="pb-20">
+                    <!-- Posts will be injected here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         const API_URL = '';
         const token = localStorage.getItem('access_token');
@@ -945,15 +1028,176 @@
 
         function logout() { localStorage.removeItem('access_token'); window.location.href = 'login.html'; }
 
-        // Suggestions Mock
-        function loadSuggestions() {
-            document.getElementById('suggestions-list').innerHTML = `
-                <div class="flex items-center gap-3 p-2 hover:bg-[#283039] rounded-lg cursor-pointer">
-                    <div class="h-8 w-8 rounded-full bg-blue-500"></div>
-                     <div class="flex-1"><p class="text-sm font-bold text-white">Top Trader</p><p class="text-xs text-[#9dabb9]">@trader1</p></div>
-                     <button class="text-xs bg-white text-black px-3 py-1 rounded-full font-bold">Seguir</button>
-                </div>
-             `;
+        // --- SUGGESTIONS & PROFILES ---
+        async function loadSuggestions() {
+            const container = document.getElementById('suggestions-list');
+            try {
+                const res = await fetch(`${API_URL}/community/suggestions`, { headers: { 'Authorization': `Bearer ${token}` } });
+                if (res.ok) {
+                    const users = await res.json();
+                    if (users.length === 0) {
+                        container.innerHTML = '<div class="text-center text-[#9dabb9] text-xs">No hay sugerencias por ahora.</div>';
+                        return;
+                    }
+
+                    container.innerHTML = users.map(u => {
+                        const avatar = u.avatarUrl ? `<div class="h-8 w-8 rounded-full flex-shrink-0 bg-cover bg-center border border-[#283039]" style="background-image: url('${API_URL}${u.avatarUrl}')"></div>`
+                            : `<div class="h-8 w-8 rounded-full flex-shrink-0 bg-gradient-to-tr from-primary to-blue-300 flex items-center justify-center font-bold text-xs border border-[#283039]">${u.name[0]}</div>`;
+
+                        return `
+                            <div class="flex items-center gap-3 p-2 hover:bg-[#283039] rounded-lg cursor-pointer transition" onclick="openUserProfile('${u.id}')">
+                                ${avatar}
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-bold text-white truncate hover:underline">${u.name}</p>
+                                    <p class="text-xs text-[#9dabb9] truncate">@${u.email.split('@')[0]}</p>
+                                </div>
+                                <button onclick="event.stopPropagation(); followUser('${u.id}', this)" class="text-xs bg-white text-black px-3 py-1.5 rounded-full font-bold hover:bg-white/90 transition transform active:scale-95">
+                                    Seguir
+                                </button>
+                            </div>
+                        `;
+                    }).join('');
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        async function followUser(userId, btn) {
+            // Optimistic UI
+            const originalText = btn.innerText;
+            const originalClass = btn.className;
+
+            // Change to "Following" style
+            btn.innerText = 'Siguiendo';
+            btn.className = "text-xs bg-black text-white border border-[#3b4754] px-3 py-1.5 rounded-full font-bold hover:bg-red-900/20 hover:text-red-500 hover:border-red-500 transition group";
+
+            // Add hover effect via JS listener or just simple onclick toggle for now
+            btn.onclick = (e) => { e.stopPropagation(); unfollowUser(userId, btn); };
+
+            // Allow hover "Dejar de seguir"
+            btn.onmouseenter = () => { btn.innerText = 'Dejar de seguir'; };
+            btn.onmouseleave = () => { btn.innerText = 'Siguiendo'; };
+
+            try {
+                const res = await fetch(`${API_URL}/community/follow/${userId}`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!res.ok) throw new Error('Failed');
+
+                // If we are in profile modal, update stats if needed
+                if (!document.getElementById('user-profile-modal').classList.contains('hidden')) {
+                    const countEl = document.getElementById('profile-followers-count');
+                    countEl.innerText = parseInt(countEl.innerText) + 1;
+                }
+
+            } catch (e) {
+                console.error(e);
+                // Revert
+                btn.innerText = originalText;
+                btn.className = originalClass;
+                btn.onclick = (e) => { e.stopPropagation(); followUser(userId, btn); };
+            }
+        }
+
+        async function unfollowUser(userId, btn) {
+            // Optimistic UI
+            btn.innerText = 'Seguir';
+            btn.className = "text-xs bg-white text-black px-3 py-1.5 rounded-full font-bold hover:bg-white/90 transition transform active:scale-95";
+            btn.onclick = (e) => { e.stopPropagation(); followUser(userId, btn); };
+            btn.onmouseenter = null;
+            btn.onmouseleave = null;
+
+            try {
+                const res = await fetch(`${API_URL}/community/unfollow/${userId}`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!res.ok) throw new Error('Failed');
+
+                // If in profile modal
+                if (!document.getElementById('user-profile-modal').classList.contains('hidden')) {
+                    const countEl = document.getElementById('profile-followers-count');
+                    countEl.innerText = Math.max(0, parseInt(countEl.innerText) - 1);
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        async function openUserProfile(userId) {
+            const modal = document.getElementById('user-profile-modal');
+            const container = document.getElementById('profile-posts-container');
+
+            // Show loading state
+            container.innerHTML = '<div class="p-10 text-center"><span class="loading-spinner h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin inline-block"></span></div>';
+            modal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+
+            try {
+                const res = await fetch(`${API_URL}/community/users/${userId}`, { headers: { 'Authorization': `Bearer ${token}` } });
+                if (!res.ok) throw new Error('Error loading profile');
+                const user = await res.json();
+
+                // Populate Info
+                document.getElementById('profile-modal-name').innerText = user.name;
+                document.getElementById('profile-modal-posts-count').innerText = `${user._count.posts} posts`;
+                document.getElementById('profile-info-name').innerText = user.name;
+                document.getElementById('profile-info-handle').innerText = `@${user.email.split('@')[0]}`;
+                document.getElementById('profile-followers-count').innerText = user._count.followers;
+                document.getElementById('profile-following-count').innerText = user._count.following;
+
+                // Avatar
+                const avatarEl = document.getElementById('profile-modal-avatar');
+                if (user.avatarUrl) {
+                    avatarEl.innerText = '';
+                    avatarEl.style.backgroundImage = `url('${API_URL}${user.avatarUrl}')`;
+                    avatarEl.classList.remove('bg-primary', 'text-white');
+                } else {
+                    avatarEl.style.backgroundImage = 'none';
+                    avatarEl.innerText = user.name[0];
+                    avatarEl.classList.add('bg-primary', 'text-white');
+                }
+
+                // Action Button (Follow/Edit)
+                const actionBtn = document.getElementById('profile-action-btn');
+                const isMe = user.id === userData.id;
+
+                if (isMe) {
+                    actionBtn.innerText = 'Editar perfil';
+                    actionBtn.className = "px-4 py-1.5 rounded-full font-bold text-sm bg-transparent border border-[#3b4754] text-white hover:bg-[#1c2127] transition";
+                    actionBtn.onclick = () => window.location.href = 'settings.html';
+                } else {
+                    if (user.isFollowing) {
+                        actionBtn.innerText = 'Siguiendo';
+                        actionBtn.className = "px-4 py-1.5 rounded-full font-bold text-sm bg-transparent border border-[#3b4754] text-white hover:text-red-500 hover:border-red-500 transition w-32";
+
+                        actionBtn.onmouseenter = () => actionBtn.innerText = 'Dejar de seguir';
+                        actionBtn.onmouseleave = () => actionBtn.innerText = 'Siguiendo';
+                        actionBtn.onclick = () => unfollowUser(user.id, actionBtn);
+                    } else {
+                        actionBtn.innerText = 'Seguir';
+                        actionBtn.className = "px-4 py-1.5 rounded-full font-bold text-sm bg-white text-black hover:bg-white/90 transition w-32";
+                        actionBtn.onmouseenter = null;
+                        actionBtn.onmouseleave = null;
+                        actionBtn.onclick = () => followUser(user.id, actionBtn);
+                    }
+                }
+
+                // Render Posts
+                if (user.posts && user.posts.length > 0) {
+                    container.innerHTML = user.posts.map(post => createPostHTML(post)).join('');
+                } else {
+                    container.innerHTML = `<div class="p-10 text-center text-[#9dabb9]">No hay posts aún.</div>`;
+                }
+
+            } catch (e) {
+                console.error(e);
+                showToast('Error al cargar perfil', 'error');
+                closeUserProfile();
+            }
+        }
+
+        function closeUserProfile() {
+            document.getElementById('user-profile-modal').classList.add('hidden');
+            document.body.style.overflow = 'auto';
         }
     </script>
 </body>

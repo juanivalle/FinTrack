@@ -145,12 +145,56 @@ export class CommunityService {
         const followingIds = user?.following.map(u => u.id) || [];
         followingIds.push(userId); // Exclude self
 
-        return this.prisma.user.findMany({
+        const suggestions = await this.prisma.user.findMany({
             where: {
                 id: { notIn: followingIds }
             },
             take: 5,
-            select: { id: true, email: true }
+            select: { id: true, email: true, name: true, avatarUrl: true },
+            orderBy: { createdAt: 'desc' } // Just random heuristic for now
         });
+
+        return suggestions;
+    }
+
+    async getUserProfile(requesterId: string, targetId: string) {
+        const user = await this.prisma.user.findUnique({
+            where: { id: targetId },
+            select: { id: true, email: true, name: true, avatarUrl: true, createdAt: true, _count: { select: { followers: true, following: true, posts: true } } }
+        });
+
+        if (!user) throw new Error('User not found');
+
+        // Check isFollowing
+        const isFollowing = (await this.prisma.user.count({
+            where: {
+                id: requesterId,
+                following: { some: { id: targetId } }
+            }
+        })) > 0;
+
+        // Get Recent Posts
+        const posts = await this.prisma.post.findMany({
+            where: { authorId: targetId },
+            take: 10,
+            orderBy: { createdAt: 'desc' },
+            include: {
+                author: { select: { email: true, id: true, name: true, avatarUrl: true } },
+                _count: { select: { comments: true } },
+                votes: { where: { userId: requesterId } } // For isLiked status
+            }
+        });
+
+        const enrichedPosts = posts.map(post => ({
+            ...post,
+            isLiked: post.votes?.[0]?.value === 1,
+            commentCount: post._count.comments
+        }));
+
+        return {
+            ...user,
+            isFollowing,
+            posts: enrichedPosts
+        };
     }
 }

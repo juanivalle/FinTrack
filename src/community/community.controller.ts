@@ -63,6 +63,11 @@ export class CommunityController {
         return this.communityService.getSuggestions(req.user.userId);
     }
 
+    @Get('users/:id')
+    getProfile(@Request() req: any, @Param('id') targetId: string) {
+        return this.communityService.getUserProfile(req.user.userId, targetId);
+    }
+
     @Post('upload')
     @UseInterceptors(FileInterceptor('file')) // Memory Storage
     async uploadFile(@UploadedFile() file: Express.Multer.File) {
