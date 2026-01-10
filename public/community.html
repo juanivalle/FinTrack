@@ -255,9 +255,9 @@
     <!-- Toast Container -->
     <div id="toast-container" class="fixed top-20 right-5 z-[60] flex flex-col gap-3 pointer-events-none"></div>
 
-    <!-- Reply Modal  -->
+    <!-- Reply Modal (Z-Index increased to sit above Profile Modal) -->
     <div id="reply-modal"
-        class="fixed inset-0 z-50 hidden bg-black/80 flex items-center justify-center backdrop-blur-sm">
+        class="fixed inset-0 z-[70] hidden bg-black/80 flex items-center justify-center backdrop-blur-sm">
         <div class="bg-surface-dark border border-border-dark rounded-xl w-full max-w-lg p-4 shadow-2xl">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-white font-bold">Responder</h3>
@@ -366,7 +366,7 @@
                 </div>
 
                 <!-- Profile Info -->
-                <div class="px-4 mt-2 pb-4 border-b border-[#283039]">
+                <div class="px-4 mt-12 pb-4 border-b border-[#283039]">
                     <h2 class="text-xl font-black text-white" id="profile-info-name">Nombre</h2>
                     <p class="text-[#9dabb9] text-sm" id="profile-info-handle">@usuario</p>
 
@@ -1272,6 +1272,8 @@
 
                 // Render Posts
                 if (user.posts && user.posts.length > 0) {
+                    // Populate Map for interactions
+                    user.posts.forEach(p => postsMap.set(p.id, p));
                     container.innerHTML = user.posts.map(post => createPostHTML(post)).join('');
                 } else {
                     container.innerHTML = `<div class="p-10 text-center text-[#9dabb9]">No hay posts aún.</div>`;
