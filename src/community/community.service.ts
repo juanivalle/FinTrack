@@ -202,7 +202,7 @@ export class CommunityService {
         const likedPostsQuery = this.prisma.vote.findMany({
             where: { userId: targetId, value: 1 },
             take: 10,
-            orderBy: { createdAt: 'desc' },
+            // orderBy: { createdAt: 'desc' }, // Vote model does not have createdAt
             include: {
                 post: {
                     include: {
@@ -222,7 +222,7 @@ export class CommunityService {
             commentCount: post._count.comments
         }));
 
-        const enrichedLikedPosts = likedVotes.map(vote => ({
+        const enrichedLikedPosts = likedVotes.map((vote: any) => ({
             ...vote.post,
             isLiked: vote.post.votes?.[0]?.value === 1,
             commentCount: vote.post._count.comments
