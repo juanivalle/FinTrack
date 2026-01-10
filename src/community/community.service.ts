@@ -174,16 +174,47 @@ export class CommunityService {
         })) > 0;
 
         // Get Recent Posts
-        const posts = await this.prisma.post.findMany({
+        const postsQuery = this.prisma.post.findMany({
             where: { authorId: targetId },
             take: 10,
             orderBy: { createdAt: 'desc' },
             include: {
                 author: { select: { email: true, id: true, name: true, avatarUrl: true } },
                 _count: { select: { comments: true } },
-                votes: { where: { userId: requesterId } } // For isLiked status
+                votes: { where: { userId: requesterId } }
             }
         });
+
+        // Get Recent Replies (Comments)
+        const repliesQuery = this.prisma.comment.findMany({
+            where: { authorId: targetId },
+            take: 10,
+            orderBy: { createdAt: 'desc' },
+            include: {
+                author: { select: { email: true, id: true, name: true, avatarUrl: true } },
+                post: {
+                    include: { author: { select: { email: true, id: true, name: true, avatarUrl: true } } }
+                }
+            }
+        });
+
+        // Get Liked Posts
+        const likedPostsQuery = this.prisma.vote.findMany({
+            where: { userId: targetId, value: 1 },
+            take: 10,
+            orderBy: { createdAt: 'desc' },
+            include: {
+                post: {
+                    include: {
+                        author: { select: { email: true, id: true, name: true, avatarUrl: true } },
+                        _count: { select: { comments: true } },
+                        votes: { where: { userId: requesterId } }
+                    }
+                }
+            }
+        });
+
+        const [posts, replies, likedVotes] = await Promise.all([postsQuery, repliesQuery, likedPostsQuery]);
 
         const enrichedPosts = posts.map(post => ({
             ...post,
@@ -191,14 +222,22 @@ export class CommunityService {
             commentCount: post._count.comments
         }));
 
+        const enrichedLikedPosts = likedVotes.map(vote => ({
+            ...vote.post,
+            isLiked: vote.post.votes?.[0]?.value === 1,
+            commentCount: vote.post._count.comments
+        }));
+
         return {
             ...user,
             _count: {
                 ...user._count,
-                followers: user._count.followedBy // Map for frontend
+                followers: user._count.followedBy
             },
             isFollowing,
-            posts: enrichedPosts
+            posts: enrichedPosts,
+            replies,
+            likedPosts: enrichedLikedPosts
         };
     }
     async searchCommunity(query: string, userId: string) {

@@ -382,16 +382,18 @@
                     </div>
                 </div>
 
-                <!-- Tabs -->
                 <div class="flex border-b border-[#283039]">
-                    <div class="flex-1 text-center py-3 hover:bg-[#1c2127] cursor-pointer relative">
+                    <div id="tab-profile-posts" onclick="switchProfileTab('POSTS')"
+                        class="flex-1 text-center py-3 hover:bg-[#1c2127] cursor-pointer relative">
                         <span class="font-bold text-white">Posts</span>
                         <div class="absolute bottom-0 left-0 w-full h-1 bg-primary rounded-t-full"></div>
                     </div>
-                    <div class="flex-1 text-center py-3 hover:bg-[#1c2127] cursor-pointer text-[#9dabb9]">
+                    <div id="tab-profile-replies" onclick="switchProfileTab('REPLIES')"
+                        class="flex-1 text-center py-3 hover:bg-[#1c2127] cursor-pointer text-[#9dabb9]">
                         <span class="font-medium">Respuestas</span>
                     </div>
-                    <div class="flex-1 text-center py-3 hover:bg-[#1c2127] cursor-pointer text-[#9dabb9]">
+                    <div id="tab-profile-likes" onclick="switchProfileTab('LIKES')"
+                        class="flex-1 text-center py-3 hover:bg-[#1c2127] cursor-pointer text-[#9dabb9]">
                         <span class="font-medium">Me gusta</span>
                     </div>
                 </div>
@@ -1206,6 +1208,8 @@
             } catch (e) { console.error(e); }
         }
 
+        let currentProfileUser = null; // Store user data for tab switching
+
         async function openUserProfile(userId) {
             const modal = document.getElementById('user-profile-modal');
             const container = document.getElementById('profile-posts-container');
@@ -1219,6 +1223,7 @@
                 const res = await fetch(`${API_URL}/community/users/${userId}`, { headers: { 'Authorization': `Bearer ${token}` } });
                 if (!res.ok) throw new Error('Error loading profile');
                 const user = await res.json();
+                currentProfileUser = user; // Store for tabs
 
                 const displayName = user.name || user.email.split('@')[0] || 'Unknown';
                 const initial = displayName[0].toUpperCase();
@@ -1247,7 +1252,7 @@
                 const actionBtn = document.getElementById('profile-action-btn');
                 const isMe = user.id === userData.id;
 
-                // Remove existing listeners to prevent stacking if using addEventListener (we use onclick property so it's fine)
+                // Remove existing listeners
                 actionBtn.onmouseenter = null;
                 actionBtn.onmouseleave = null;
 
@@ -1270,14 +1275,8 @@
                     }
                 }
 
-                // Render Posts
-                if (user.posts && user.posts.length > 0) {
-                    // Populate Map for interactions
-                    user.posts.forEach(p => postsMap.set(p.id, p));
-                    container.innerHTML = user.posts.map(post => createPostHTML(post)).join('');
-                } else {
-                    container.innerHTML = `<div class="p-10 text-center text-[#9dabb9]">No hay posts aún.</div>`;
-                }
+                // Initialize Tabs
+                switchProfileTab('POSTS');
 
             } catch (e) {
                 console.error("Profile Error:", e);
@@ -1286,9 +1285,78 @@
             }
         }
 
+        function switchProfileTab(tab) {
+            if (!currentProfileUser) return;
+
+            const container = document.getElementById('profile-posts-container');
+            const data = currentProfileUser;
+            container.innerHTML = '';
+
+            // Update Tab UI
+            const tabs = {
+                'POSTS': document.getElementById('tab-profile-posts'),
+                'REPLIES': document.getElementById('tab-profile-replies'),
+                'LIKES': document.getElementById('tab-profile-likes')
+            };
+
+            // Reset all tabs
+            Object.values(tabs).forEach(el => {
+                if (el) {
+                    el.className = "flex-1 text-center py-3 hover:bg-[#1c2127] cursor-pointer text-[#9dabb9] relative";
+                    el.querySelector('span').classList.remove('text-white', 'text-[#9dabb9]');
+                    el.querySelector('span').classList.add('text-[#9dabb9]');
+                    const indicator = el.querySelector('div');
+                    if (indicator) indicator.remove();
+                }
+            });
+
+            // Activate current tab
+            const activeTab = tabs[tab];
+            if (activeTab) {
+                activeTab.querySelector('span').classList.remove('text-[#9dabb9]');
+                activeTab.querySelector('span').classList.add('text-white');
+                activeTab.innerHTML += '<div class="absolute bottom-0 left-0 w-full h-1 bg-primary rounded-t-full"></div>';
+            }
+
+            // Render Content
+            if (tab === 'POSTS') {
+                if (data.posts && data.posts.length > 0) {
+                    data.posts.forEach(p => postsMap.set(p.id, p));
+                    container.innerHTML = data.posts.map(post => createPostHTML(post)).join('');
+                } else {
+                    container.innerHTML = `<div class="p-10 text-center text-[#9dabb9]">No hay posts aún.</div>`;
+                }
+            } else if (tab === 'REPLIES') {
+                if (data.replies && data.replies.length > 0) {
+                    container.innerHTML = data.replies.map(r => {
+                        const postAuthor = r.post.author?.name || r.post.author?.email.split('@')[0] || 'Unknown';
+                        return `
+                            <div class="p-4 border-b border-[#283039] hover:bg-[#151a21] cursor-pointer transition" onclick="window.location.href='community.html#post-${r.postId}'"> <!-- Simplification: Direct link anchor -->
+                                <div class="flex items-center gap-2 mb-2 text-[#9dabb9] text-sm">
+                                    <span class="material-symbols-outlined text-sm">reply</span>
+                                    <span>En respuesta a <span class="text-primary">@${postAuthor}</span></span>
+                                </div>
+                                <p class="text-white text-base">${r.content}</p>
+                            </div>
+                         `;
+                    }).join('');
+                } else {
+                    container.innerHTML = `<div class="p-10 text-center text-[#9dabb9]">No hay respuestas aún.</div>`;
+                }
+            } else if (tab === 'LIKES') {
+                if (data.likedPosts && data.likedPosts.length > 0) {
+                    data.likedPosts.forEach(p => postsMap.set(p.id, p));
+                    container.innerHTML = data.likedPosts.map(post => createPostHTML(post)).join('');
+                } else {
+                    container.innerHTML = `<div class="p-10 text-center text-[#9dabb9]">No hay Likes aún.</div>`;
+                }
+            }
+        }
+
         function closeUserProfile() {
             document.getElementById('user-profile-modal').classList.add('hidden');
             document.body.style.overflow = 'auto';
+            currentProfileUser = null;
         }
     </script>
 </body>
