@@ -70,20 +70,34 @@
 <body class="bg-background-dark text-white font-display overflow-hidden h-screen flex flex-col">
 
     <!-- Header -->
-    <header class="h-16 border-b border-border-dark bg-[#111418] flex items-center justify-between px-6 shrink-0 z-20">
+    <header
+        class="h-16 border-b border-border-dark bg-[#111418] flex items-center justify-between px-4 md:px-6 shrink-0 z-20">
         <div class="flex items-center gap-2 text-primary cursor-pointer" onclick="window.location.href='index.html'">
-            <span class="material-symbols-outlined text-3xl">query_stats</span>
-            <span class="text-xl font-bold tracking-tight text-white">FinTrack</span>
+            <span class="material-symbols-outlined text-2xl md:text-3xl">query_stats</span>
+            <span class="text-lg md:text-xl font-bold tracking-tight text-white">FinTrack</span>
         </div>
 
         <div class="flex items-center gap-4">
+            <!-- Desktop Search -->
             <div class="hidden md:flex items-center bg-[#1c2127] rounded-lg border border-border-dark px-3 py-1.5 w-64">
                 <span class="material-symbols-outlined text-[#9dabb9] text-sm">search</span>
                 <input type="text" id="search-input" placeholder="Buscar activo (BTC, AAPL)..."
                     class="bg-transparent border-none focus:ring-0 text-sm w-full text-white placeholder-[#9dabb9]">
             </div>
+
+            <!-- Mobile Avatar Shortcut -->
+            <div class="md:hidden">
+                <a href="settings.html"
+                    class="block size-8 rounded-full bg-surface-dark bg-cover bg-center border border-border-dark"
+                    id="mobile-header-avatar">
+                    <!-- Fallback if no image -->
+                    <span class="flex items-center justify-center w-full h-full text-primary font-bold text-xs"
+                        id="mobile-avatar-fallback">U</span>
+                </a>
+            </div>
+
             <button onclick="logout()"
-                class="flex items-center gap-2 text-sm font-medium text-[#9dabb9] hover:text-white transition-colors">
+                class="hidden md:flex items-center gap-2 text-sm font-medium text-[#9dabb9] hover:text-white transition-colors">
                 <span class="material-symbols-outlined">logout</span>
                 <span class="hidden sm:inline">Salir</span>
             </button>
@@ -169,7 +183,8 @@
             </div>
 
             <!-- TradingView Widget BEGIN -->
-            <div class="w-full relative min-h-[500px] lg:h-full lg:flex-1" id="tv-chart-container"></div>
+            <div class="w-full relative h-[55vh] min-h-[350px] lg:h-full lg:flex-1 lg:min-h-0" id="tv-chart-container">
+            </div>
             <!-- TradingView Widget END -->
 
             <!-- Mobile Watchlist (Stacked below chart) -->
@@ -330,18 +345,45 @@
                 // Update Avatar
                 const initial = userName[0].toUpperCase();
                 const avatarEl = document.getElementById('user-avatar');
+                const mobileAvatarEl = document.getElementById('mobile-header-avatar');
+                const mobileAvatarFallback = document.getElementById('mobile-avatar-fallback');
 
+                // Function to set avatar style
+                const setAvatar = (el, fallbackEl) => {
+                    if (user.avatarUrl) {
+                        if (fallbackEl) fallbackEl.style.display = 'none';
+                        el.style.backgroundImage = `url('${API_URL}${user.avatarUrl}')`;
+                        el.classList.remove('text-primary'); // Remove fallback color class if implied
+                        if (!mobileAvatarEl) el.innerText = ''; // Clear text if it was a simpler container
+                    } else {
+                        if (fallbackEl) {
+                            fallbackEl.style.display = 'flex';
+                            fallbackEl.innerText = initial;
+                        } else {
+                            // Desktop sidebar avatar is a simple div
+                            el.innerText = initial;
+                            el.style.backgroundImage = 'none';
+                            el.classList.add('text-primary');
+                        }
+                    }
+                };
+
+                // Set Desktop
+                setAvatar(avatarEl);
+
+                // Set Mobile
                 if (user.avatarUrl) {
-                    avatarEl.innerText = '';
-                    avatarEl.style.backgroundImage = `url('${API_URL}${user.avatarUrl}')`;
-                    avatarEl.style.backgroundSize = 'cover';
-                    avatarEl.style.backgroundPosition = 'center';
-                    avatarEl.classList.remove('text-primary');
+                    if (mobileAvatarFallback) mobileAvatarFallback.style.display = 'none';
+                    mobileAvatarEl.style.backgroundImage = `url('${API_URL}${user.avatarUrl}')`;
                 } else {
-                    avatarEl.innerText = initial;
-                    avatarEl.style.backgroundImage = 'none';
-                    avatarEl.classList.add('text-primary');
+                    if (mobileAvatarFallback) {
+                        mobileAvatarFallback.style.display = 'flex';
+                        mobileAvatarFallback.innerText = initial;
+                    }
+                    mobileAvatarEl.style.backgroundImage = 'none';
                 }
+
+
             } catch (error) {
                 console.error('Profile Load Error:', error);
                 document.getElementById('user-name').innerText = 'Usuario';
