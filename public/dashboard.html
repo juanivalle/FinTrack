@@ -296,45 +296,18 @@
                 // Update Avatar
                 const initial = userName[0].toUpperCase();
                 const avatarEl = document.getElementById('user-avatar');
-                const mobileAvatarEl = document.getElementById('mobile-header-avatar');
-                const mobileAvatarFallback = document.getElementById('mobile-avatar-fallback');
 
-                // Function to set avatar style
-                const setAvatar = (el, fallbackEl) => {
-                    if (user.avatarUrl) {
-                        if (fallbackEl) fallbackEl.style.display = 'none';
-                        el.style.backgroundImage = `url('${API_URL}${user.avatarUrl}')`;
-                        el.classList.remove('text-primary'); // Remove fallback color class if implied
-                        if (!mobileAvatarEl) el.innerText = ''; // Clear text if it was a simpler container
-                    } else {
-                        if (fallbackEl) {
-                            fallbackEl.style.display = 'flex';
-                            fallbackEl.innerText = initial;
-                        } else {
-                            // Desktop sidebar avatar is a simple div
-                            el.innerText = initial;
-                            el.style.backgroundImage = 'none';
-                            el.classList.add('text-primary');
-                        }
-                    }
-                };
-
-                // Set Desktop
-                setAvatar(avatarEl);
-
-                // Set Mobile
                 if (user.avatarUrl) {
-                    if (mobileAvatarFallback) mobileAvatarFallback.style.display = 'none';
-                    mobileAvatarEl.style.backgroundImage = `url('${API_URL}${user.avatarUrl}')`;
+                    avatarEl.innerText = '';
+                    avatarEl.style.backgroundImage = `url('${API_URL}${user.avatarUrl}')`;
+                    avatarEl.style.backgroundSize = 'cover';
+                    avatarEl.style.backgroundPosition = 'center';
+                    avatarEl.classList.remove('text-primary');
                 } else {
-                    if (mobileAvatarFallback) {
-                        mobileAvatarFallback.style.display = 'flex';
-                        mobileAvatarFallback.innerText = initial;
-                    }
-                    mobileAvatarEl.style.backgroundImage = 'none';
+                    avatarEl.innerText = initial;
+                    avatarEl.style.backgroundImage = 'none';
+                    avatarEl.classList.add('text-primary');
                 }
-
-
             } catch (error) {
                 console.error('Profile Load Error:', error);
                 document.getElementById('user-name').innerText = 'Usuario';
