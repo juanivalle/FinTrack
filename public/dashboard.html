@@ -169,8 +169,21 @@
             </div>
 
             <!-- TradingView Widget BEGIN -->
-            <div class="flex-1 w-full relative" id="tv-chart-container" style="height: 100%; min-height: 500px;"></div>
+            <div class="w-full relative min-h-[500px] lg:h-full lg:flex-1" id="tv-chart-container"></div>
             <!-- TradingView Widget END -->
+
+            <!-- Mobile Watchlist (Stacked below chart) -->
+            <div class="lg:hidden p-4 bg-[#111418] border-t border-border-dark pb-24">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-white font-semibold text-sm">Watchlist</h3>
+                    <button onclick="toggleModal('add-asset-modal')" class="text-[#9dabb9] hover:text-white">
+                        <span class="material-symbols-outlined text-xl">add_circle</span>
+                    </button>
+                </div>
+                <div id="watchlist-container-mobile" class="space-y-1">
+                    <!-- Mobile Watchlist Items will be duplicated/rendered here via JS -->
+                </div>
+            </div>
         </main>
 
         <!-- Watchlist Sidebar -->
@@ -534,51 +547,41 @@
         }
 
         function renderWatchlist(assets) {
-            const container = document.getElementById('watchlist-container');
-            container.innerHTML = '';
+            const containerDesk = document.getElementById('watchlist-container');
+            const containerMobile = document.getElementById('watchlist-container-mobile');
 
-            assets.forEach(asset => {
-                const item = document.createElement('div');
-                item.className = "flex items-center justify-between px-4 py-3 hover:bg-[#1c2127] cursor-pointer border-b border-border-dark/50 transition-colors group";
-                item.onclick = (e) => {
-                    // Prevent switching if clicking delete button (if we add one later, for now just click)
-                    selectAsset(asset.symbol);
-                };
-
-                // Color logic
+            // Helper to generate HTML for one item
+            const createItemHTML = (asset) => {
                 let colorClass = 'text-primary bg-primary/10';
                 if (asset.symbol === 'BTC') colorClass = 'text-orange-500 bg-orange-500/10';
                 if (asset.symbol === 'ETH') colorClass = 'text-purple-500 bg-purple-500/10';
                 if (asset.symbol === 'SPY') colorClass = 'text-green-500 bg-green-500/10';
 
-                item.innerHTML = `
-                    <div class="flex items-center gap-3">
-                        <div class="size-8 rounded ${colorClass} flex items-center justify-center font-bold text-[10px]">${asset.symbol}</div>
-                        <div class="flex flex-col">
-                            <span class="text-white text-sm font-medium">${asset.name}</span>
-                            <span class="text-[#9dabb9] text-xs">${asset.type}</span>
+                return `
+                    <div onclick="selectAsset('${asset.symbol}')" class="flex items-center justify-between px-4 py-3 hover:bg-[#1c2127] cursor-pointer border-b border-border-dark/50 transition-colors group">
+                        <div class="flex items-center gap-3">
+                            <div class="size-8 rounded ${colorClass} flex items-center justify-center font-bold text-[10px]">${asset.symbol}</div>
+                            <div class="flex flex-col">
+                                <span class="text-white text-sm font-medium">${asset.name}</span>
+                                <span class="text-[#9dabb9] text-xs">${asset.type}</span>
+                            </div>
                         </div>
+                        <button onclick="event.stopPropagation(); removeFromWatchlist('${asset.symbol}')" class="text-[#9dabb9] hover:text-bear opacity-0 group-hover:opacity-100 transition-opacity p-2 ml-auto">
+                            <span class="material-symbols-outlined text-sm">delete</span>
+                        </button>
                     </div>
                 `;
+            };
 
-                // Add Delete Button (visible on hover)
-                const deleteBtn = document.createElement('button');
-                deleteBtn.className = "text-[#9dabb9] hover:text-bear opacity-0 group-hover:opacity-100 transition-opacity p-2";
-                deleteBtn.innerHTML = '<span class="material-symbols-outlined text-sm">delete</span>';
-                deleteBtn.onclick = (e) => {
-                    e.stopPropagation();
-                    removeFromWatchlist(asset.symbol);
-                };
+            const html = assets.map(createItemHTML).join('');
 
-                item.appendChild(deleteBtn);
-                container.appendChild(item);
-            });
+            if (containerDesk) containerDesk.innerHTML = html;
+            if (containerMobile) containerMobile.innerHTML = html;
 
-            // Also update global asset map/details map dynamically if needed for the chart
+            // Also update global asset map/details map
             assets.forEach(a => {
                 if (!detailsMap[a.symbol]) {
                     detailsMap[a.symbol] = { name: a.name, sub: a.symbol, type: a.type };
-                    // Default generic map
                     assetMap[a.symbol] = (a.type === 'Crypto' ? `BINANCE:${a.symbol}USDT` : `NASDAQ:${a.symbol}`);
                 }
             });
