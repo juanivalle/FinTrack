@@ -182,21 +182,25 @@
                 </div>
             </div>
 
-            <!-- TradingView Widget BEGIN -->
-            <div class="w-full relative h-[55vh] min-h-[350px] lg:h-full lg:flex-1 lg:min-h-0" id="tv-chart-container">
-            </div>
-            <!-- TradingView Widget END -->
+            <!-- Scrollable Content Container -->
+            <div class="flex-1 overflow-y-auto relative lg:overflow-hidden lg:flex lg:flex-col custom-scrollbar">
 
-            <!-- Mobile Watchlist (Stacked below chart) -->
-            <div class="lg:hidden p-4 bg-[#111418] border-t border-border-dark pb-24">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-white font-semibold text-sm">Watchlist</h3>
-                    <button onclick="toggleModal('add-asset-modal')" class="text-[#9dabb9] hover:text-white">
-                        <span class="material-symbols-outlined text-xl">add_circle</span>
-                    </button>
-                </div>
-                <div id="watchlist-container-mobile" class="space-y-1">
-                    <!-- Mobile Watchlist Items will be duplicated/rendered here via JS -->
+                <!-- TradingView Widget BEGIN -->
+                <div class="w-full relative h-[55vh] min-h-[350px] lg:h-full lg:flex-1 lg:min-h-0"
+                    id="tv-chart-container"></div>
+                <!-- TradingView Widget END -->
+
+                <!-- Mobile Watchlist (Stacked below chart) -->
+                <div class="lg:hidden p-4 bg-[#111418] border-t border-border-dark pb-24">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-white font-semibold text-sm">Watchlist</h3>
+                        <button onclick="toggleModal('add-asset-modal')" class="text-[#9dabb9] hover:text-white">
+                            <span class="material-symbols-outlined text-xl">add_circle</span>
+                        </button>
+                    </div>
+                    <div id="watchlist-container-mobile" class="space-y-1">
+                        <!-- Mobile Watchlist Items will be duplicated/rendered here via JS -->
+                    </div>
                 </div>
             </div>
         </main>
