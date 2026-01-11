@@ -78,26 +78,13 @@
         </div>
 
         <div class="flex items-center gap-4">
-            <!-- Desktop Search -->
             <div class="hidden md:flex items-center bg-[#1c2127] rounded-lg border border-border-dark px-3 py-1.5 w-64">
                 <span class="material-symbols-outlined text-[#9dabb9] text-sm">search</span>
                 <input type="text" id="search-input" placeholder="Buscar activo (BTC, AAPL)..."
                     class="bg-transparent border-none focus:ring-0 text-sm w-full text-white placeholder-[#9dabb9]">
             </div>
-
-            <!-- Mobile Avatar Shortcut -->
-            <div class="md:hidden">
-                <a href="settings.html"
-                    class="block size-8 rounded-full bg-surface-dark bg-cover bg-center border border-border-dark"
-                    id="mobile-header-avatar">
-                    <!-- Fallback if no image -->
-                    <span class="flex items-center justify-center w-full h-full text-primary font-bold text-xs"
-                        id="mobile-avatar-fallback">U</span>
-                </a>
-            </div>
-
             <button onclick="logout()"
-                class="hidden md:flex items-center gap-2 text-sm font-medium text-[#9dabb9] hover:text-white transition-colors">
+                class="flex items-center gap-2 text-sm font-medium text-[#9dabb9] hover:text-white transition-colors">
                 <span class="material-symbols-outlined">logout</span>
                 <span class="hidden sm:inline">Salir</span>
             </button>
@@ -182,27 +169,9 @@
                 </div>
             </div>
 
-            <!-- Scrollable Content Container -->
-            <div class="flex-1 overflow-y-auto relative lg:overflow-hidden lg:flex lg:flex-col custom-scrollbar">
-
-                <!-- TradingView Widget BEGIN -->
-                <div class="w-full relative h-[55vh] min-h-[350px] lg:h-full lg:flex-1 lg:min-h-0"
-                    id="tv-chart-container"></div>
-                <!-- TradingView Widget END -->
-
-                <!-- Mobile Watchlist (Stacked below chart) -->
-                <div class="lg:hidden p-4 bg-[#111418] border-t border-border-dark pb-24">
-                    <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-white font-semibold text-sm">Watchlist</h3>
-                        <button onclick="toggleModal('add-asset-modal')" class="text-[#9dabb9] hover:text-white">
-                            <span class="material-symbols-outlined text-xl">add_circle</span>
-                        </button>
-                    </div>
-                    <div id="watchlist-container-mobile" class="space-y-1">
-                        <!-- Mobile Watchlist Items will be duplicated/rendered here via JS -->
-                    </div>
-                </div>
-            </div>
+            <!-- TradingView Widget BEGIN -->
+            <div class="flex-1 w-full relative" id="tv-chart-container" style="height: 100%; min-height: 500px;"></div>
+            <!-- TradingView Widget END -->
         </main>
 
         <!-- Watchlist Sidebar -->
@@ -221,29 +190,7 @@
     </div>
 
     <!-- Mobile Bottom Navigation -->
-    <nav
-        class="md:hidden fixed bottom-0 w-full bg-[#111418] border-t border-border-dark flex justify-around py-3 z-40 pb-safe">
-        <a href="dashboard.html" class="flex flex-col items-center text-primary">
-            <span class="material-symbols-outlined">dashboard</span>
-            <span class="text-[10px] mt-1">Inicio</span>
-        </a>
-        <a href="comparison.html" class="flex flex-col items-center text-[#9dabb9]">
-            <span class="material-symbols-outlined">compare_arrows</span>
-            <span class="text-[10px] mt-1">Comparar</span>
-        </a>
-        <a href="alerts.html" class="flex flex-col items-center text-[#9dabb9]">
-            <span class="material-symbols-outlined">notifications</span>
-            <span class="text-[10px] mt-1">Alertas</span>
-        </a>
-        <a href="community.html" class="flex flex-col items-center text-[#9dabb9]">
-            <span class="material-symbols-outlined">forum</span>
-            <span class="text-[10px] mt-1">Comunidad</span>
-        </a>
-        <a href="settings.html" class="flex flex-col items-center text-[#9dabb9]">
-            <span class="material-symbols-outlined">settings</span>
-            <span class="text-[10px] mt-1">Ajustes</span>
-        </a>
-    </nav>
+
 
     <!-- Add Asset Modal -->
     <div id="add-asset-modal"
@@ -593,41 +540,51 @@
         }
 
         function renderWatchlist(assets) {
-            const containerDesk = document.getElementById('watchlist-container');
-            const containerMobile = document.getElementById('watchlist-container-mobile');
+            const container = document.getElementById('watchlist-container');
+            container.innerHTML = '';
 
-            // Helper to generate HTML for one item
-            const createItemHTML = (asset) => {
+            assets.forEach(asset => {
+                const item = document.createElement('div');
+                item.className = "flex items-center justify-between px-4 py-3 hover:bg-[#1c2127] cursor-pointer border-b border-border-dark/50 transition-colors group";
+                item.onclick = (e) => {
+                    // Prevent switching if clicking delete button (if we add one later, for now just click)
+                    selectAsset(asset.symbol);
+                };
+
+                // Color logic
                 let colorClass = 'text-primary bg-primary/10';
                 if (asset.symbol === 'BTC') colorClass = 'text-orange-500 bg-orange-500/10';
                 if (asset.symbol === 'ETH') colorClass = 'text-purple-500 bg-purple-500/10';
                 if (asset.symbol === 'SPY') colorClass = 'text-green-500 bg-green-500/10';
 
-                return `
-                    <div onclick="selectAsset('${asset.symbol}')" class="flex items-center justify-between px-4 py-3 hover:bg-[#1c2127] cursor-pointer border-b border-border-dark/50 transition-colors group">
-                        <div class="flex items-center gap-3">
-                            <div class="size-8 rounded ${colorClass} flex items-center justify-center font-bold text-[10px]">${asset.symbol}</div>
-                            <div class="flex flex-col">
-                                <span class="text-white text-sm font-medium">${asset.name}</span>
-                                <span class="text-[#9dabb9] text-xs">${asset.type}</span>
-                            </div>
+                item.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="size-8 rounded ${colorClass} flex items-center justify-center font-bold text-[10px]">${asset.symbol}</div>
+                        <div class="flex flex-col">
+                            <span class="text-white text-sm font-medium">${asset.name}</span>
+                            <span class="text-[#9dabb9] text-xs">${asset.type}</span>
                         </div>
-                        <button onclick="event.stopPropagation(); removeFromWatchlist('${asset.symbol}')" class="text-[#9dabb9] hover:text-bear opacity-0 group-hover:opacity-100 transition-opacity p-2 ml-auto">
-                            <span class="material-symbols-outlined text-sm">delete</span>
-                        </button>
                     </div>
                 `;
-            };
 
-            const html = assets.map(createItemHTML).join('');
+                // Add Delete Button (visible on hover)
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = "text-[#9dabb9] hover:text-bear opacity-0 group-hover:opacity-100 transition-opacity p-2";
+                deleteBtn.innerHTML = '<span class="material-symbols-outlined text-sm">delete</span>';
+                deleteBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    removeFromWatchlist(asset.symbol);
+                };
 
-            if (containerDesk) containerDesk.innerHTML = html;
-            if (containerMobile) containerMobile.innerHTML = html;
+                item.appendChild(deleteBtn);
+                container.appendChild(item);
+            });
 
-            // Also update global asset map/details map
+            // Also update global asset map/details map dynamically if needed for the chart
             assets.forEach(a => {
                 if (!detailsMap[a.symbol]) {
                     detailsMap[a.symbol] = { name: a.name, sub: a.symbol, type: a.type };
+                    // Default generic map
                     assetMap[a.symbol] = (a.type === 'Crypto' ? `BINANCE:${a.symbol}USDT` : `NASDAQ:${a.symbol}`);
                 }
             });
